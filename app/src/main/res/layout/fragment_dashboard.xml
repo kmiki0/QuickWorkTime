@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/base_background_color"
+    tools:context=".ui.workListView.WorkListViewFragment">
+
+    <!-- ヘッダー部分 -->
+    <Button
+        android:id="@+id/btnBackMonth"
+        android:layout_width="30dp"
+        android:layout_height="40dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="4dp"
+        android:background="#00FFFFFF"
+        android:text="&lt;"
+        android:textSize="20sp"
+        android:textColor="#FFFFFF"
+        app:layout_constraintBottom_toBottomOf="@+id/monthText"
+        app:layout_constraintEnd_toStartOf="@+id/monthText"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/monthText" />
+
+    <TextView
+        android:id="@+id/monthText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="32dp"
+        android:text="2024/11"
+        android:textColor="#FFFFFF"
+        android:textSize="40sp"
+        app:layout_constraintEnd_toStartOf="@+id/btnNextMonth"
+        app:layout_constraintStart_toEndOf="@+id/btnBackMonth"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <Button
+        android:id="@+id/btnNextMonth"
+        android:layout_width="30dp"
+        android:layout_height="40dp"
+        android:layout_marginStart="2dp"
+        android:layout_marginEnd="232dp"
+        android:background="#00FFFFFF"
+        android:text="&gt;"
+        android:textColor="#FFFFFF"
+        android:textSize="20sp"
+        app:layout_constraintBottom_toBottomOf="@+id/monthText"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/monthText"
+        app:layout_constraintTop_toTopOf="@+id/monthText" />
+
+    <Button
+        android:id="@+id/btnExport"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="20dp"
+        android:backgroundTint="@color/status_bar"
+        android:text="Export"
+        android:textColor="#FFFFFF"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <!-- 合計時間 -->
+    <TextView
+        android:id="@+id/totalTimeText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        android:text="156.20 h"
+        android:textColor="#FFFFFF"
+        android:textSize="60sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/monthText" />
+
+    <!-- リスト（RecyclerView） -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/timeList"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:clipToPadding="false"
+        android:paddingTop="16dp"
+        app:layout_constraintBottom_toBottomOf="@+id/guideline"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/totalTimeText" />
+
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/guideline"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        app:layout_constraintGuide_end="55dp" />
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>

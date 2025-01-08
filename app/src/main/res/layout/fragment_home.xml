@@ -1,0 +1,264 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/constraintLayout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/base_background_color"
+    tools:context=".ui.home.HomeFragment">
+
+    <TextView
+        android:id="@+id/text_date"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="2024/12/01"
+        android:textAlignment="center"
+        android:textColor="#FFFFFF"
+        android:textSize="55sp"
+        app:layout_constraintBottom_toTopOf="@+id/label_timeStart"
+        app:layout_constraintEnd_toStartOf="@+id/text_week"
+        app:layout_constraintHorizontal_bias="0.707"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.433" />
+
+    <TextView
+        android:id="@+id/text_week"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="40dp"
+        android:text="(Monday)"
+        android:textAlignment="center"
+        android:textColor="#FFFFFF"
+        android:textSize="35sp"
+        app:layout_constraintBottom_toBottomOf="@+id/text_date"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/text_date"
+        app:layout_constraintVertical_bias="1.0" />
+
+    <androidx.gridlayout.widget.GridLayout
+        android:id="@+id/gridBtnLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="0dp"
+        android:layout_marginTop="16dp"
+        android:translationY="450dp"
+        app:columnCount="3"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.859"
+        app:layout_gravity="center_horizontal"
+        app:rowCount="4"
+        app:useDefaultMargins="true">
+
+        <Button
+            android:id="@+id/btnGrid_0_0"
+            style="@style/CustomButton"
+            app:layout_columnWeight="1" />
+
+        <Button
+            android:id="@+id/btnGrid_0_1"
+            style="@style/CustomButton"
+            app:layout_columnWeight="1" />
+
+        <Button
+            android:id="@+id/btnGrid_0_2"
+            style="@style/CustomButton"
+            app:layout_columnWeight="1" />
+
+        <Button
+            android:id="@+id/btnGrid_1_0"
+            style="@style/CustomButton"
+            app:layout_columnWeight="1" />
+
+        <Button
+            android:id="@+id/btnGrid_1_1"
+            style="@style/CustomButton"
+            app:layout_columnWeight="1" />
+
+        <Button
+            android:id="@+id/btnGrid_1_2"
+            style="@style/CustomButton"
+            app:layout_columnWeight="1" />
+
+        <Button
+            android:id="@+id/btnGrid_2_0"
+            style="@style/CustomButton"
+            app:layout_columnWeight="1" />
+
+        <Button
+            android:id="@+id/btnGrid_2_1"
+            style="@style/CustomButton"
+            app:layout_columnWeight="1" />
+
+        <Button
+            android:id="@+id/btnGrid_2_2"
+            style="@style/CustomButton"
+            app:layout_columnWeight="1" />
+
+        <Button
+            android:id="@+id/btnGrid_3_0"
+            style="@style/CustomButton"
+            app:layout_columnWeight="1" />
+
+        <Button
+            android:id="@+id/btnGrid_3_1"
+            style="@style/CustomButton"
+            app:layout_columnWeight="1" />
+
+        <Button
+            android:id="@+id/btnGrid_3_2"
+            style="@style/CustomButton"
+            app:layout_columnWeight="1" />
+
+    </androidx.gridlayout.widget.GridLayout>
+
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/guideline"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        app:layout_constraintGuide_end="43dp" />
+
+    <!-- Work Start -->
+
+    <!-- Work End -->
+
+
+    <TextView
+        android:id="@+id/label_timeStart"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Work Start"
+        android:textAlignment="center"
+        android:textColor="#FFFFFF"
+        android:textSize="34sp"
+        app:layout_constraintBottom_toTopOf="@+id/label_timeStartDelimiter"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <TextView
+        android:id="@+id/label_timeStartDelimiter"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text=" : "
+        android:textAlignment="center"
+        android:textColor="#FFFFFF"
+        android:textSize="120sp"
+        app:layout_constraintBottom_toTopOf="@id/guideline"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.3" />
+
+    <TextView
+        android:id="@+id/text_timeStartHH"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="09"
+        android:textAlignment="viewEnd"
+        android:textColor="#FFFFFF"
+        android:textSize="120sp"
+        app:layout_constraintBottom_toBottomOf="@+id/label_timeStartDelimiter"
+        app:layout_constraintEnd_toStartOf="@+id/label_timeStartDelimiter"
+        app:layout_constraintHorizontal_bias="1.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/label_timeStartDelimiter" />
+
+    <TextView
+        android:id="@+id/text_timeStartMM"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="00"
+        android:textAlignment="viewStart"
+        android:textColor="#FFFFFF"
+        android:textSize="120sp"
+        app:layout_constraintBottom_toBottomOf="@+id/label_timeStartDelimiter"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toEndOf="@+id/label_timeStartDelimiter"
+        app:layout_constraintTop_toTopOf="@+id/label_timeStartDelimiter" />
+
+    <TextView
+        android:id="@+id/label_timeEnd"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Work End"
+        android:textAlignment="center"
+        android:textColor="#FFFFFF"
+        android:textSize="34sp"
+        app:layout_constraintBottom_toTopOf="@+id/label_timeEndDelimiter"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <TextView
+        android:id="@+id/label_timeEndDelimiter"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text=" : "
+        android:textAlignment="center"
+        android:textColor="#FFFFFF"
+        android:textSize="120sp"
+        app:layout_constraintBottom_toTopOf="@+id/guideline"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/label_timeStartDelimiter"
+        app:layout_constraintVertical_bias="0.3" />
+
+    <TextView
+        android:id="@+id/text_timeEndHH"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="18"
+        android:textAlignment="textEnd"
+        android:textColor="#FFFFFF"
+        android:textSize="120sp"
+        app:layout_constraintBottom_toBottomOf="@+id/label_timeEndDelimiter"
+        app:layout_constraintEnd_toStartOf="@+id/label_timeEndDelimiter"
+        app:layout_constraintHorizontal_bias="1.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/label_timeEndDelimiter" />
+
+    <TextView
+        android:id="@+id/text_timeEndMM"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="00"
+        android:textAlignment="viewStart"
+        android:textColor="#FFFFFF"
+        android:textSize="120sp"
+        app:layout_constraintBottom_toBottomOf="@+id/label_timeEndDelimiter"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toEndOf="@+id/label_timeEndDelimiter"
+        app:layout_constraintTop_toTopOf="@+id/label_timeEndDelimiter" />
+
+
+    <!-- 粒子アニメーション用のカスタムビュー -->
+        <com.example.quickworktime.view.ParticleAnimationView
+            android:id="@+id/particleView1"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+        <com.example.quickworktime.view.ParticleAnimationView
+            android:id="@+id/particleView2"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+        <com.example.quickworktime.view.ParticleAnimationView
+            android:id="@+id/particleView3"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+        <com.example.quickworktime.view.ParticleAnimationView
+            android:id="@+id/particleView4"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            tools:layout_editor_absoluteX="0dp"
+            tools:layout_editor_absoluteY="16dp" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
