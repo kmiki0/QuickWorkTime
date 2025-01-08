@@ -1,5 +1,7 @@
 package com.example.quickworktime.ui.workListView
 
+import android.animation.AnimatorSet
+import android.animation.ObjectAnimator
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -12,13 +14,18 @@ class FormulaAdapter(
     private val onItemRemove: (position: Int) -> Unit
 ) : RecyclerView.Adapter<FormulaAdapter.FormulaViewHolder>() {
 
+    // ドラッグ中のアイテムを管理
+    private var isDragging = false
+    private var draggingViewHolder: RecyclerView.ViewHolder? = null
+    private var shakeAnimator: AnimatorSet? = null
+
     inner class FormulaViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val textView: TextView = itemView.findViewById(R.id.formulaItemText)
 
         init {
             itemView.setOnClickListener {
                 val position = adapterPosition
-                if (position != RecyclerView.NO_POSITION) {
+                if (position != RecyclerView.NO_POSITION && !isDragging) {
                     onItemRemove(position)
                 }
             }
@@ -37,4 +44,85 @@ class FormulaAdapter(
     }
 
     override fun getItemCount(): Int = items.size
+
+    /**
+     * ドラッグ開始時に呼び出す
+     */
+    fun startDragAnimation(viewHolder: RecyclerView.ViewHolder) {
+        isDragging = true
+        draggingViewHolder = viewHolder
+        startShakeAnimation(viewHolder.itemView)
+    }
+
+    /**
+     * ドラッグ終了時に呼び出す
+     */
+    fun stopDragAnimation() {
+        isDragging = false
+        draggingViewHolder?.let { holder ->
+            stopShakeAnimation(holder.itemView)
+        }
+        draggingViewHolder = null
+    }
+
+    /**
+     * ぶるぶるアニメーションを開始
+     */
+    private fun startShakeAnimation(view: View) {
+        stopShakeAnimation(view) // 既存のアニメーションがあれば停止
+
+        // 回転アニメーション
+        val rotateAnimator = ObjectAnimator.ofFloat(view, "rotation", -2f, 2f).apply {
+            duration = 100
+            repeatCount = ObjectAnimator.INFINITE
+            repeatMode = ObjectAnimator.REVERSE
+        }
+
+        // 軽微なスケールアニメーション
+        val scaleXAnimator = ObjectAnimator.ofFloat(view, "scaleX", 0.98f, 1.02f).apply {
+            duration = 150
+            repeatCount = ObjectAnimator.INFINITE
+            repeatMode = ObjectAnimator.REVERSE
+        }
+
+        val scaleYAnimator = ObjectAnimator.ofFloat(view, "scaleY", 0.98f, 1.02f).apply {
+            duration = 150
+            repeatCount = ObjectAnimator.INFINITE
+            repeatMode = ObjectAnimator.REVERSE
+        }
+
+        // 軽微な位置の揺れ
+        val translationXAnimator = ObjectAnimator.ofFloat(view, "translationX", -1f, 1f).apply {
+            duration = 80
+            repeatCount = ObjectAnimator.INFINITE
+            repeatMode = ObjectAnimator.REVERSE
+        }
+
+        val translationYAnimator = ObjectAnimator.ofFloat(view, "translationY", -1f, 1f).apply {
+            duration = 120
+            repeatCount = ObjectAnimator.INFINITE
+            repeatMode = ObjectAnimator.REVERSE
+        }
+
+        // アニメーションセットを作成
+        shakeAnimator = AnimatorSet().apply {
+            playTogether(rotateAnimator, scaleXAnimator, scaleYAnimator, translationXAnimator, translationYAnimator)
+            start()
+        }
+    }
+
+    /**
+     * ぶるぶるアニメーションを停止
+     */
+    private fun stopShakeAnimation(view: View) {
+        shakeAnimator?.cancel()
+        shakeAnimator = null
+
+        // ビューを元の状態に戻す
+        view.rotation = 0f
+        view.scaleX = 1f
+        view.scaleY = 1f
+        view.translationX = 0f
+        view.translationY = 0f
+    }
 }

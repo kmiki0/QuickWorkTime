@@ -1,7 +1,6 @@
 package com.example.quickworktime.ui.popup
 
 import android.app.AlertDialog
-import android.app.TimePickerDialog
 import android.content.Context
 import android.view.LayoutInflater
 import android.view.View
@@ -14,7 +13,6 @@ import com.example.quickworktime.R
 import com.example.quickworktime.ui.workListView.FormulaAdapter
 import com.example.quickworktime.ui.workListView.FormulaItem
 import com.example.quickworktime.ui.workListView.ItemType
-import java.util.Calendar
 import java.util.UUID
 
 class AttendanceCalculationPopup(private val context: Context) {
@@ -137,6 +135,8 @@ class AttendanceCalculationPopup(private val context: Context) {
             ): Boolean {
                 val fromPos = viewHolder.adapterPosition
                 val toPos = target.adapterPosition
+
+                // 元のコードと全く同じ処理
                 formulaItems.add(toPos, formulaItems.removeAt(fromPos))
                 formulaAdapter.notifyItemMoved(fromPos, toPos)
                 return true
@@ -144,6 +144,27 @@ class AttendanceCalculationPopup(private val context: Context) {
 
             override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
                 // スワイプ削除はなし
+            }
+
+            override fun onSelectedChanged(viewHolder: RecyclerView.ViewHolder?, actionState: Int) {
+                super.onSelectedChanged(viewHolder, actionState)
+
+                when (actionState) {
+                    ItemTouchHelper.ACTION_STATE_DRAG -> {
+                        // ドラッグ開始時にぶるぶるアニメーションを開始
+                        viewHolder?.let {
+                            formulaAdapter.startDragAnimation(it)
+                        }
+                    }
+                    ItemTouchHelper.ACTION_STATE_IDLE -> {
+                        // ドラッグ終了時にアニメーションを停止
+                        formulaAdapter.stopDragAnimation()
+                    }
+                }
+            }
+
+            override fun isLongPressDragEnabled(): Boolean {
+                return true // 長押しでドラッグを有効にする
             }
         })
         itemTouchHelper.attachToRecyclerView(recyclerView)
