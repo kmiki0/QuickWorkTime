@@ -5,14 +5,19 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Button
+import android.widget.TextView
+import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.room.InvalidationTracker
+import com.example.quickworktime.R
 import com.example.quickworktime.databinding.FragmentDashboardBinding
 import com.example.quickworktime.room.repository.WorkInfoRepository
+import com.google.android.material.navigation.NavigationView
 import java.util.Calendar
 
 class WorkListViewFragment : Fragment() {
@@ -75,8 +80,43 @@ class WorkListViewFragment : Fragment() {
             setHistoryButton()
         }
 
-        // リスナーを設定
-        binding.btnMenu.setOnClickListener { }
+
+        var drawerLayout: DrawerLayout
+
+        drawerLayout = binding.drawerLayout
+        val navView: NavigationView = binding.navSideView
+
+        binding.btnMenu.setOnClickListener {
+            drawerLayout.openDrawer(navView)
+        }
+
+        navView.setNavigationItemSelectedListener { menuItem ->
+            when (menuItem.itemId) {
+                R.id.settingWorkTime -> {
+                    showCustomPopup("First Item")
+                    true
+                }
+                R.id.settingWeekday -> {
+                    showCustomPopup("Second Item")
+                    true
+                }
+                else -> false
+            }
+        }
+    }
+
+    private fun showCustomPopup(message: String) {
+        val dialogView = LayoutInflater.from(context).inflate(R.layout.custom_popup, null)
+        val dialogBuilder = AlertDialog.Builder(context)
+            .setView(dialogView)
+
+        val alertDialog = dialogBuilder.create()
+        alertDialog.show()
+
+        dialogView.findViewById<TextView>(R.id.popupMessage).text = message
+        dialogView.findViewById<Button>(R.id.popupButton).setOnClickListener {
+            alertDialog.dismiss()
+        }
     }
 
     override fun onDestroyView() {

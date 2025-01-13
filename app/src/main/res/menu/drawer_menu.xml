@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:title="設定"
+        android:enabled="false" />
+
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/settingWorkTime"
+            android:title="開始 ~ 終了 時間" />
+        <item
+            android:id="@+id/settingWeekday"
+            android:title="出勤曜日" />
+    </group>
+
+    <item
+        android:title="計算方法"
+        android:enabled="false" />
+
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/calWorkTime"
+            android:title="勤務時間" />
+        <item
+            android:id="@+id/calBreakTime"
+            android:title="休憩時間" />
+    </group>
+
+    <item
+        android:title="出力"
+        android:enabled="false" />
+
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/exportCSV"
+            android:title="CSV出力" />
+    </group>
+
+</menu>
