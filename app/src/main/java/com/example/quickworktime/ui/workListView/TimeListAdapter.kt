@@ -17,16 +17,9 @@ import android.os.Looper
 import android.view.MotionEvent
 import android.widget.ProgressBar
 import android.widget.Toast
+import androidx.lifecycle.LifecycleOwner
 import androidx.navigation.Navigation
-import com.example.quickworktime.room.WorkSetting
-import com.example.quickworktime.room.repository.WorkInfoRepository
-import com.example.quickworktime.room.repository.WorkSettingRepository
 import com.google.android.material.bottomsheet.BottomSheetDialog
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.util.Calendar
 
 class TimeListAdapter(
@@ -64,7 +57,7 @@ class TimeListAdapter(
 		holder.calcText.text = item.workingTime.replace(":", ".") + " h"
 		// 開始終了時間
 		holder.timeText.text = "${item.startTime} ~ ${item.endTime}"
-		holder.itemView.setOnClickListener { btnAction(item, holder.itemView) }
+		holder.itemView.setOnClickListener { btnAction(item.date, holder.itemView) }
 
 	    // 長押し処理
         var isPressing = false
@@ -118,12 +111,12 @@ class TimeListAdapter(
 		notifyDataSetChanged()
 	}
 
-	private fun btnAction(item: WorkInfo, view: View) {
+	private fun btnAction(date: String, view: View) {
 		val navController = Navigation.findNavController(view)
 		navController.navigate(
 			R.id.action_navigation_dashboard_to_navigation_home,
 			Bundle().apply {
-				putString("date", item.date)
+				putString("date", date)
 			}
 		)
 	}
@@ -144,18 +137,21 @@ class TimeListAdapter(
 			val datePickerDialog = DatePickerDialog(context, { _, selectedYear, selectedMonth, selectedDay ->
 				val formattedDate = String.format("%04d%02d%02d", selectedYear, selectedMonth + 1, selectedDay)
 
-
-					// すでにデータが存在する場合
-//				vm.selctedDataByDate(formattedDate).observe(vm, { isExist ->
-//					if (isExist){
-//						btnAction(workInfo, holder.itemView)
-//						// yyyy/mm/dd 形式で表示
-//						Toast.makeText(context, "${workInfo.date.substring(0, 4)}/${workInfo.date.substring(4, 6)}/${workInfo.date.substring(6, 8)} のデータを表示します", Toast.LENGTH_SHORT).show()
-//					} else {
-//						Toast.makeText(context, "${formattedDate.substring(0, 4)}/${formattedDate.substring(4, 6)}/${formattedDate.substring(6, 8)} を新規作成しました", Toast.LENGTH_SHORT).show()
-//					}
-//				}
-
+				vm.selectedDataByDate(formattedDate).observe(holder.itemView.context as LifecycleOwner, { isExist ->
+					if (isExist){
+						// すでにデータが存在する場合
+						Toast.makeText(context,
+							"${formattedDate.substring(0, 4)}/${formattedDate.substring(4, 6)}/${formattedDate.substring(6, 8)} のデータを表示します",
+							Toast.LENGTH_SHORT).show()
+					} else {
+						// 新規作成場合
+						Toast.makeText(context,
+							"${formattedDate.substring(0, 4)}/${formattedDate.substring(4, 6)}/${formattedDate.substring(6, 8)} を新規作成しました",
+							Toast.LENGTH_SHORT).show()
+					}
+					// Home画面に遷移
+					btnAction(formattedDate, holder.itemView)
+				})
 			}, year, month, day)
 
 			datePickerDialog.show()
@@ -163,7 +159,7 @@ class TimeListAdapter(
 		}
 
 		bottomSheetView.findViewById<TextView>(R.id.menu_edit)?.setOnClickListener {
-			btnAction(workInfo, holder.itemView)
+			btnAction(workInfo.date, holder.itemView)
 			dialog.dismiss()
 		}
 
@@ -199,13 +195,23 @@ class TimeListAdapter(
 			}
 		}
 
+		bottomSheetView.findViewById<TextView>(R.id.menu_delete)?.setOnTouchListener() { _, event ->
+			if (event.action == MotionEvent.ACTION_UP || event.action == MotionEvent.ACTION_CANCEL) {
+				isPressing = false
+				handler.removeCallbacks(updateProgressForDelete)
+				progress = 0
+				progressBar.visibility = View.GONE
+				progressBar.progress = 0
+			}
+			false
+		}
+
 		bottomSheetView.findViewById<TextView>(R.id.menu_delete)?.setOnLongClickListener {
 			isPressing = true
 			progressBar.visibility = View.VISIBLE
 			handler.post(updateProgressForDelete)
 			true
 		}
-
 		dialog.show()
 	}
 
@@ -215,21 +221,14 @@ class TimeListAdapter(
 			setTitle("削除")
 			setMessage("${date.substring(0, 4)}/${date.substring(4, 6)}/${date.substring(6, 8)} のデータを削除しますか？")
 			setPositiveButton("Yes") { _, _ ->
-				// Yesが押されたときの処理
-//				val dao = DatabaseProvider.getDatabase(context).workInfoDao()
-//				val repository = WorkInfoRepository(dao)
-//				CoroutineScope(Dispatchers.IO).launch {
-//					repository.deleteWorkInfo(workInfo)
-//					withContext(Dispatchers.Main) {
-//						Toast.makeText(context, "削除しました", Toast.LENGTH_SHORT).show()
-//					}
-//				}
+				vm.deleteWorkInfo(workInfo)
 			}
 			setNegativeButton("No") { dialog, _ ->
 				// Noが押されたときの処理
 				dialog.dismiss() // ダイアログを閉じる
 			}
-			setCancelable(true) // ダイアログ外のタップで閉じる
+			// ダイアログ外のタップで閉じる
+			setCancelable(true)
 		}.show()
 	}
 

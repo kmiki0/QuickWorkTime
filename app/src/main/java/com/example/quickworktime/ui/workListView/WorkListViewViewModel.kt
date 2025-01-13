@@ -1,23 +1,28 @@
 package com.example.quickworktime.ui.workListView
 
 import android.app.Application
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import com.example.quickworktime.room.AppDatabase
 import com.example.quickworktime.room.WorkInfo
-import com.example.quickworktime.room.WorkInfoDao
 import com.example.quickworktime.room.WorkSetting
 import com.example.quickworktime.room.repository.WorkInfoRepository
 import com.example.quickworktime.room.repository.WorkSettingRepository
 import kotlinx.coroutines.launch
+import java.util.Calendar
 
 class WorkListViewViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _monthText = MutableLiveData<String>().apply {
-        value = "2024/12"
+        // 現在の年月を取得
+        val calendar = Calendar.getInstance()
+        val year = calendar.get(Calendar.YEAR)
+        val month = calendar.get(Calendar.MONTH) + 1
+
+        // month は00 で表示するため、2桁にする
+        value = "${year}/${month.toString().padStart(2, '0')}"
     }
     val monthText: LiveData<String> = _monthText
 
@@ -64,7 +69,7 @@ class WorkListViewViewModel(application: Application) : AndroidViewModel(applica
     }
 
 
-    fun selctedDataByDate(date: String):LiveData<Boolean> {
+    fun selectedDataByDate(date: String):LiveData<Boolean> {
         val result = MutableLiveData<Boolean>()
 
         viewModelScope.launch {
@@ -102,5 +107,12 @@ class WorkListViewViewModel(application: Application) : AndroidViewModel(applica
             }
         }
         return result
+    }
+
+
+    fun deleteWorkInfo(workInfo: WorkInfo) {
+        viewModelScope.launch {
+            infoRepo.deleteWorkInfo(workInfo)
+        }
     }
 }

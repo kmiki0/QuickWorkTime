@@ -76,15 +76,6 @@ class WorkInfoRepository(private val dao: WorkInfoDao) {
 		}
 	}
 
-	// データを1件、更新処理
-	suspend fun updateWorkInfo(workInfo: WorkInfo) {
-		try {
-			dao.updateWorkInfo(workInfo)
-		} catch (e: Exception) {
-			Log.d("DebugLog", "Error: ${e.message}")
-		}
-	}
-
 	// データを1件、削除処理
 	suspend fun deleteWorkInfo(workInfo: WorkInfo) {
 		try {

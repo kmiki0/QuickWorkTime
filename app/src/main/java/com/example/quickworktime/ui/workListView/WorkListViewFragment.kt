@@ -43,11 +43,6 @@ class WorkListViewFragment : Fragment() {
         recyclerView.layoutManager = LinearLayoutManager(this.requireContext())
         recyclerView.adapter = myAdapter
 
-        // 表示する月を設定
-        val date = java.util.Date()
-
-        // yyyy/MM 形式で表示
-//        binding.monthText.text = java.text.SimpleDateFormat("yyyy/MM").format(date)
         // 画面のmonthTextにvmのmonthTextをバインド
         vm.monthText.observe(viewLifecycleOwner, { monthText ->
             binding.monthText.text = monthText
@@ -59,10 +54,10 @@ class WorkListViewFragment : Fragment() {
         setHistoryButton()
 
         binding.btnBackMonth.setOnClickListener { view ->
-            if (binding.btnBackMonth.alpha !=1.0f) return@setOnClickListener
+            if (binding.btnBackMonth.alpha != 1.0f) return@setOnClickListener
+            val yyyyMM = vm.monthText.value.toString().replace("/", "")
             // 表示する月を変更
-            val yyyyMM = binding.monthText.text.toString().replace("/", "")
-            binding.monthText.text = changeMonth(yyyyMM, -1).substring(0, 4) + "/" + changeMonth(yyyyMM, -1).substring(4, 6)
+            vm.setMonthText(changeMonth(yyyyMM, -1).substring(0, 4) + "/" + changeMonth(yyyyMM, -1).substring(4, 6))
             // データをロードして表示
             loadData()
             // 履歴ボタンの表示非表示の設定
@@ -70,10 +65,10 @@ class WorkListViewFragment : Fragment() {
         }
 
         binding.btnNextMonth.setOnClickListener { view ->
-            if (binding.btnNextMonth.alpha !=1.0f) return@setOnClickListener
+            if (binding.btnNextMonth.alpha != 1.0f) return@setOnClickListener
+            val yyyyMM = vm.monthText.value.toString().replace("/", "")
             // 表示する月を変更
-            val yyyyMM = binding.monthText.text.toString().replace("/", "")
-            binding.monthText.text = changeMonth(yyyyMM, 1).substring(0, 4) + "/" + changeMonth(yyyyMM, 1).substring(4, 6)
+            vm.setMonthText(changeMonth(yyyyMM, 1).substring(0, 4) + "/" + changeMonth(yyyyMM, 1).substring(4, 6))
             // データをロードして表示
             loadData()
             // 履歴ボタンの表示非表示の設定
@@ -81,7 +76,7 @@ class WorkListViewFragment : Fragment() {
         }
 
         // リスナーを設定
-        binding.btnExport.setOnClickListener { }
+        binding.btnMenu.setOnClickListener { }
     }
 
     override fun onDestroyView() {
@@ -139,7 +134,6 @@ class WorkListViewFragment : Fragment() {
 
         // yyyyMM を取得
         val yyyyMM = vm.monthText.value.toString().replace("/", "")
-
 
         vm.getListData(yyyyMM)
 
