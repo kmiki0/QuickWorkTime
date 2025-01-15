@@ -48,7 +48,7 @@ class WorkListViewViewModel(application: Application) : AndroidViewModel(applica
     val workInfoList: LiveData<List<WorkInfo>> = _workInfoList
 
     fun setMonthText(text: String) {
-        _monthText.value = text
+        _monthText.postValue(text)
     }
 
     fun getListData(date: String) {

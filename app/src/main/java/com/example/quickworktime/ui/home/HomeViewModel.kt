@@ -29,7 +29,6 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     private val _displayData = MutableLiveData<WorkInfo?>()
     val displayData: LiveData<WorkInfo?> get() = _displayData
 
-
     // アクティブ状態を保持するLiveData
     private val _activeTextState = MutableLiveData<ActiveText>()
     val activeTextState: LiveData<ActiveText> = _activeTextState
@@ -42,8 +41,69 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     private val _activeTextView = MutableLiveData<TextView>()
     val activeTextView: LiveData<TextView> = _activeTextView
     // 更新関数
-    fun updateActiveTextView(activeTextView: TextView) {
+    fun setActiveTextView(activeTextView: TextView) {
         _activeTextView.value = activeTextView
+    }
+
+
+    // ----------------------------------------
+    // 画面項目 (Data Binding)
+    // ----------------------------------------
+
+    // 日付 (yyyy/MM/dd)
+    private val _date = MutableLiveData<String?>()
+    val date: LiveData<String?> get() = _date
+
+    // 曜日
+    private val _week = MutableLiveData<String?>()
+    val week: LiveData<String?> get() = _week
+
+    // 開始時間（HH）
+    private val _startHour = MutableLiveData<String?>()
+    val startHour: LiveData<String?> get() = _startHour
+
+    // 開始時間（mm）
+    private val _startMinute = MutableLiveData<String?>()
+    val startMinute: LiveData<String?> get() = _startMinute
+
+    // 終了時間（HH）
+    private val _endHour = MutableLiveData<String?>()
+    val endHour: LiveData<String?> get() = _endHour
+
+    // 終了時間（mm）
+    private val _endMinute = MutableLiveData<String?>()
+    val endMinute: LiveData<String?> get() = _endMinute
+
+
+    // ----------------------------------------
+    // データバインディング用の関数
+    // ----------------------------------------
+    fun setDate(date: String) {
+        _date.value = date.substring(0, 4) + "/" + date.substring(4, 6) + "/" + date.substring(6, 8)
+    }
+    fun setWeek(week: String) {
+        _week.value = "($week)"
+    }
+    fun setStartHour(hour: String) {
+        _startHour.value = hour.padStart(2, '0')
+    }
+    fun setStartMinute(minute: String) {
+        _startMinute.value = minute.padStart(2, '0')
+    }
+    fun setEndHour(hour: String) {
+        _endHour.value = hour.padStart(2, '0')
+    }
+    fun setEndMinute(minute: String) {
+        _endMinute.value = minute.padStart(2, '0')
+    }
+
+    fun setDisplayDate(workInfo: WorkInfo) {
+        setDate(workInfo.date)
+        setWeek(workInfo.weekday)
+        setStartHour(workInfo.startTime.split(":")[0])
+        setStartMinute(workInfo.startTime.split(":")[1])
+        setEndHour(workInfo.endTime.split(":")[0])
+        setEndMinute(workInfo.endTime.split(":")[1])
     }
 
 
@@ -53,6 +113,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         getDisplayData("")
     }
 
+
     /** ============================================
      *  PKに沿ったデータを取得（引数がNULL）
      *  @param date String?
@@ -60,6 +121,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
      *  ============================================ */
     fun getDisplayData(date: String?) {
         viewModelScope.launch {
+            // date が NULL の場合、最新のデータを取得
             val data = repo.getWorkInfoByDate(date)
             if (data == null) {
                 return@launch

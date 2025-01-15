@@ -10,13 +10,10 @@ import android.widget.TextView
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import androidx.room.InvalidationTracker
 import com.example.quickworktime.R
 import com.example.quickworktime.databinding.FragmentDashboardBinding
-import com.example.quickworktime.room.repository.WorkInfoRepository
 import com.google.android.material.navigation.NavigationView
 import java.util.Calendar
 
@@ -80,10 +77,7 @@ class WorkListViewFragment : Fragment() {
             setHistoryButton()
         }
 
-
-        var drawerLayout: DrawerLayout
-
-        drawerLayout = binding.drawerLayout
+        val drawerLayout: DrawerLayout = binding.drawerLayout
         val navView: NavigationView = binding.navSideView
 
         binding.btnMenu.setOnClickListener {

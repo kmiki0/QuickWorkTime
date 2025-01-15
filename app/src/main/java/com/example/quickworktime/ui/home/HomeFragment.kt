@@ -7,6 +7,7 @@ import android.transition.ChangeBounds
 import android.transition.TransitionManager
 import androidx.constraintlayout.widget.ConstraintSet
 import android.os.Bundle
+import android.os.Looper
 import android.util.Log
 import android.view.HapticFeedbackConstants
 import android.view.LayoutInflater
@@ -45,6 +46,10 @@ class HomeFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View {
         _binding = FragmentHomeBinding.inflate(inflater, container, false)
+        // ViewModelをバインド
+        binding.viewModel = vm
+        // ライフサイクル所有者を設定
+        binding.lifecycleOwner = viewLifecycleOwner
         return binding.root
     }
 
@@ -71,6 +76,7 @@ class HomeFragment : Fragment() {
         binding.textTimeStartHH.setOnClickListener {
             val state = vm.activeTextState.value
             val txtView = binding.textTimeStartHH
+            vm.setActiveTextView(binding.textTimeStartHH)
 
             if (state == HomeViewModel.ActiveText.START && txtView.textSize == txtSizeMax) {
                 /**
@@ -78,8 +84,6 @@ class HomeFragment : Fragment() {
                  */
                 // StateをDefaultに変更
                 vm.updateActiveTextState(HomeViewModel.ActiveText.DEFAULT)
-                // データを登録
-                insertWorkInfo()
             } else if (state == HomeViewModel.ActiveText.START && txtView.textSize == txtSizeNormal) {
                 /**
                  * 状態 = START かつ テキストサイズが通常の場合
@@ -92,7 +96,7 @@ class HomeFragment : Fragment() {
                 AnimationUtils.animateTextAlpha(binding.textTimeStartMM, binding.textTimeStartMM.alpha, 0.5f)
                 // ボタンのラベルを設定
                 setGridBtnLabel(0)
-                vm.updateActiveTextView(binding.textTimeStartHH)
+                vm.setActiveTextView(binding.textTimeStartHH)
             }else if (state == HomeViewModel.ActiveText.DEFAULT) {
                 /**
                  * 状態 = Default の場合
@@ -105,7 +109,7 @@ class HomeFragment : Fragment() {
                 AnimationUtils.animateTextAlpha(binding.textTimeStartHH, binding.textTimeStartHH.alpha, 1.0f)
                 // ボタンのラベルを設定
                 setGridBtnLabel(0)
-                vm.updateActiveTextView(binding.textTimeStartHH)
+                vm.setActiveTextView(binding.textTimeStartHH)
             } else if ( state == HomeViewModel.ActiveText.END) {
                 /**
                  * 状態 = END の場合
@@ -121,6 +125,7 @@ class HomeFragment : Fragment() {
         binding.textTimeStartMM.setOnClickListener {
             val state = vm.activeTextState.value
             val txtView = binding.textTimeStartMM
+            vm.setActiveTextView(binding.textTimeStartMM)
 
             if (state == HomeViewModel.ActiveText.START && txtView.textSize == txtSizeMax) {
                 /**
@@ -128,8 +133,6 @@ class HomeFragment : Fragment() {
                  */
                  // StateをDefaultに変更
                  vm.updateActiveTextState(HomeViewModel.ActiveText.DEFAULT)
-                // データを登録
-                insertWorkInfo()
             } else if (state == HomeViewModel.ActiveText.START && txtView.textSize == txtSizeNormal) {
                 /**
                  * 状態 = START かつ テキストサイズが通常の場合
@@ -142,7 +145,7 @@ class HomeFragment : Fragment() {
                 AnimationUtils.animateTextAlpha(binding.textTimeStartHH, binding.textTimeStartHH.alpha, 0.5f)
                 // ボタンのラベルを設定
                 setGridBtnLabel(2)
-                vm.updateActiveTextView(binding.textTimeStartMM)
+                vm.setActiveTextView(binding.textTimeStartMM)
             }else if (state == HomeViewModel.ActiveText.DEFAULT) {
                 /**
                  * 状態 = Default の場合
@@ -153,7 +156,7 @@ class HomeFragment : Fragment() {
                 AnimationUtils.animateTextAlpha(binding.textTimeStartMM, binding.textTimeStartMM.alpha, 1.0f)
                 // ボタンのラベルを設定
                 setGridBtnLabel(2)
-                vm.updateActiveTextView(binding.textTimeStartMM)
+                vm.setActiveTextView(binding.textTimeStartMM)
             } else if ( state == HomeViewModel.ActiveText.END) {
                 /**
                  * 状態 = END の場合
@@ -169,6 +172,7 @@ class HomeFragment : Fragment() {
         binding.textTimeEndHH.setOnClickListener {
             val state = vm.activeTextState.value
             val txtView = binding.textTimeEndHH
+            vm.setActiveTextView(binding.textTimeEndHH)
 
             if (state == HomeViewModel.ActiveText.END && txtView.textSize == txtSizeMax) {
                 /**
@@ -176,8 +180,6 @@ class HomeFragment : Fragment() {
                  */
                 // StateをDefaultに変更
                 vm.updateActiveTextState(HomeViewModel.ActiveText.DEFAULT)
-                // データを登録
-                insertWorkInfo()
             } else if (state == HomeViewModel.ActiveText.END && txtView.textSize == txtSizeNormal) {
                 /**
                  * 状態 = END かつ テキストサイズが通常の場合
@@ -190,7 +192,7 @@ class HomeFragment : Fragment() {
                 AnimationUtils.animateTextAlpha(binding.textTimeEndMM, binding.textTimeEndMM.alpha, 0.5f)
                 // ボタンのラベルを設定
                 setGridBtnLabel(1)
-                vm.updateActiveTextView(binding.textTimeEndHH)
+                vm.setActiveTextView(binding.textTimeEndHH)
             }else if (state == HomeViewModel.ActiveText.DEFAULT) {
                 /**
                  * 状態 = Default の場合
@@ -201,7 +203,7 @@ class HomeFragment : Fragment() {
                 AnimationUtils.animateTextAlpha(binding.textTimeEndHH, binding.textTimeEndHH.alpha, 1.0f)
                 // ボタンのラベルを設定
                 setGridBtnLabel(1)
-                vm.updateActiveTextView(binding.textTimeEndHH)
+                vm.setActiveTextView(binding.textTimeEndHH)
             } else if ( state == HomeViewModel.ActiveText.START) {
                 /**
                  * 状態 = START の場合
@@ -217,6 +219,7 @@ class HomeFragment : Fragment() {
         binding.textTimeEndMM.setOnClickListener {
             val state = vm.activeTextState.value
             val txtView = binding.textTimeEndMM
+            vm.setActiveTextView(binding.textTimeEndMM)
 
             if (state == HomeViewModel.ActiveText.END && txtView.textSize == txtSizeMax) {
                 /**
@@ -224,8 +227,6 @@ class HomeFragment : Fragment() {
                  */
                 // StateをDefaultに変更
                 vm.updateActiveTextState(HomeViewModel.ActiveText.DEFAULT)
-                // データを登録
-                insertWorkInfo()
             } else if (state == HomeViewModel.ActiveText.END && txtView.textSize == txtSizeNormal) {
                 /**
                  * 状態 = END かつ テキストサイズが通常の場合
@@ -238,7 +239,7 @@ class HomeFragment : Fragment() {
                 AnimationUtils.animateTextAlpha(binding.textTimeEndHH, binding.textTimeEndHH.alpha, 0.5f)
                 // ボタンのラベルを設定
                 setGridBtnLabel(2)
-                vm.updateActiveTextView(binding.textTimeEndMM)
+                vm.setActiveTextView(binding.textTimeEndMM)
             }else if (state == HomeViewModel.ActiveText.DEFAULT) {
                 /**
                  * 状態 = Default の場合
@@ -249,7 +250,7 @@ class HomeFragment : Fragment() {
                 AnimationUtils.animateTextAlpha(binding.textTimeEndMM, binding.textTimeEndMM.alpha, 1.0f)
                 // ボタンのラベルを設定
                 setGridBtnLabel(2)
-                vm.updateActiveTextView(binding.textTimeEndMM)
+                vm.setActiveTextView(binding.textTimeEndMM)
             } else if ( state == HomeViewModel.ActiveText.START) {
                 /**
                  * 状態 = START の場合
@@ -291,17 +292,13 @@ class HomeFragment : Fragment() {
 
 	private fun setDisplayByArgument() {
 
-        // 値が取れない場合、"" で初期化
+        // 値が取れない場合、Null で初期化
         val date: String? = arguments?.getString("date")
 
         vm.displayData.observe(viewLifecycleOwner) { workInfo ->
             if (workInfo != null) {
-                binding.textDate.text = workInfo.date.substring(0, 4) + "/" + workInfo.date.substring(4, 6) + "/" + workInfo.date.substring(6, 8)
-                binding.textWeek.text = "(" + workInfo.weekday + ")"
-                binding.textTimeStartHH.text = workInfo.startTime.split(":")[0].padStart(2, '0')
-                binding.textTimeStartMM.text = workInfo.startTime.split(":")[1].padStart(2, '0')
-                binding.textTimeEndHH.text = workInfo.endTime.split(":")[0].padStart(2, '0')
-                binding.textTimeEndMM.text = workInfo.endTime.split(":")[1].padStart(2, '0')
+                // vm にデータをセット
+                vm.setDisplayDate(workInfo)
             }
         }
 
@@ -427,16 +424,15 @@ class HomeFragment : Fragment() {
 
     private fun insertWorkInfo() {
         val data = WorkInfo(
-            binding.textDate.text.toString().replace("/", ""),
-            binding.textTimeStartHH.text.toString() + ":" + binding.textTimeStartMM.text.toString(),
-            binding.textTimeEndHH.text.toString() + ":" + binding.textTimeEndMM.text.toString(),
+            vm.date.value!!.replace("/", ""),
+            vm.startHour.value + ":" + vm.startMinute.value,
+            vm.endHour.value + ":" + vm.endMinute.value,
             "",
             "",
             false,
             false,
-            binding.textWeek.text.toString().replace("(", "").replace(")", "")
+            vm.week.value!!.replace("(", "").replace(")", "")
         )
-
 
         vm.insertWorkInfo(data)
         Toast.makeText(requireContext(), "${binding.textDate.text} を登録しました", Toast.LENGTH_SHORT).show()
@@ -516,10 +512,56 @@ class HomeFragment : Fragment() {
                 // ボタンのテキストを変更
                 viewBtn.text = lblTime[lblTimeNum][viewBtnCnt]
                 viewBtn.setOnClickListener{
+                    // ボタンをタップした際の振動
                     it.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
                     // テキストを変更
-                    vm.activeTextView.value?.text = viewBtn.text.substring(0, 2)
+//                    vm.activeTextView.value?.text = viewBtn.text.substring(0, 2)
+                    if (isChangedActiveTextValue(viewBtn.text.substring(0, 2))){
+                        insertWorkInfo()
+                    }
                 }
+            }
+        }
+    }
+
+    // value : 変更しようとしている値
+    private fun isChangedActiveTextValue(value: String): Boolean {
+        // case　文
+        when (vm.activeTextView.value?.id) {
+            binding.textTimeStartHH.id -> {
+                if (value != vm.startHour.value) {
+                    vm.setStartHour(value)
+                    return true
+                }else{
+                    return false
+                }
+            }
+            binding.textTimeStartMM.id -> {
+                if (value != vm.startMinute.value) {
+                    vm.setStartMinute(value)
+                    return true
+                }else{
+                    return false
+                }
+            }
+            binding.textTimeEndHH.id -> {
+                if (value != vm.endHour.value) {
+                    vm.setEndHour(value)
+                    return true
+                }else{
+                    return false
+                }
+            }
+            binding.textTimeEndMM.id -> {
+                if (value != vm.endMinute.value) {
+                    vm.setEndMinute(value)
+                    return true
+                }else{
+                    return false
+                }
+            }
+            else -> {
+                return false
             }
         }
     }
