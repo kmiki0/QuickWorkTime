@@ -12,7 +12,7 @@
         <!-- Status bar color. -->
         <item name="android:statusBarColor">#2D2F2F</item>
         <!-- Customize your theme here. -->
-        <item name="android:fontFamily">@font/jersey10_regular</item>
-        <item name="fontFamily">@font/jersey10_regular</item> <!-- 互換性のため -->
+<!--        <item name="android:fontFamily">@font/jersey10_regular</item>-->
+<!--        <item name="fontFamily">@font/jersey10_regular</item>-->
     </style>
 </resources>

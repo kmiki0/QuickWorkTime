@@ -188,21 +188,6 @@ class WorkListViewFragment : Fragment() {
             }
         })
 
-//        vm.getListData(yyyyMM).observe(viewLifecycleOwner, { listData ->
-//            // データを取得
-//            myAdapter.updateData(listData)   // Adapter にデータを更新
-//
-//            // data の中のworkingTimeを合計して表示
-//            var sum: Float = 0.0f
-//            for (i in listData) {
-//                // workingTime は "HH:mm" 形式なので、":" を取り除いて Float に変換
-//                val time = i.workingTime.split(":")
-//                // 下２桁で四捨五入
-//                sum += (time[0] + "." + time[1]).toFloat()
-//            }
-//            binding.totalTimeText.text = sum.toString() + " h"
-//        })
-
         if (vm.listData.value != null) {
             // データを取得
             myAdapter.updateData(vm.listData.value!!)   // Adapter にデータを更新

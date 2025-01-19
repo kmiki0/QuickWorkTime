@@ -16,36 +16,52 @@
         android:background="@color/base_background_color"
         tools:context=".ui.home.HomeFragment">
 
-        <TextView
-            android:id="@+id/text_date"
-            android:layout_width="wrap_content"
+        <LinearLayout
+            android:id="@+id/linear_date"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@{viewModel.date}"
-            tools:text="2024/12/01"
-            android:textAlignment="center"
-            android:textColor="#FFFFFF"
-            android:textSize="55sp"
+            android:gravity="center"
             app:layout_constraintBottom_toTopOf="@+id/label_timeStart"
-            app:layout_constraintEnd_toStartOf="@+id/text_week"
-            app:layout_constraintHorizontal_bias="0.707"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintVertical_bias="0.433" />
+            app:layout_constraintTop_toTopOf="@+id/particleView1">
 
-        <TextView
-            android:id="@+id/text_week"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginEnd="40dp"
-            android:text="@{viewModel.week}"
-            tools:text="(Monday)"
-            android:textAlignment="center"
-            android:textColor="#FFFFFF"
-            android:textSize="35sp"
-            app:layout_constraintBottom_toBottomOf="@+id/text_date"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="@+id/text_date"
-            app:layout_constraintVertical_bias="1.0" />
+            <TextView
+                android:id="@+id/text_date"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@{viewModel.date}"
+                android:textAlignment="center"
+                android:textColor="#FFFFFF"
+                android:textSize="55sp"
+                tools:text="2024/12/01"
+                android:layout_marginEnd="10dp"
+                android:fontFamily="@font/jersey10_regular"
+                />
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:id="@+id/constraintLayout2"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                >
+
+                <TextView
+                    android:id="@+id/text_week"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@{viewModel.week}"
+                    android:textAlignment="center"
+                    android:textColor="#FFFFFF"
+                    android:textSize="35sp"
+                    tools:text="(Monday)"
+                    android:fontFamily="@font/jersey10_regular"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintVertical_bias="0.761" />
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
+        </LinearLayout>
+
 
         <androidx.gridlayout.widget.GridLayout
             android:id="@+id/gridBtnLayout"
@@ -143,6 +159,7 @@
             android:textAlignment="center"
             android:textColor="#FFFFFF"
             android:textSize="34sp"
+            android:fontFamily="@font/jersey10_regular"
             app:layout_constraintBottom_toTopOf="@+id/label_timeStartDelimiter"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent" />
@@ -156,6 +173,7 @@
             android:textAlignment="viewEnd"
             android:textColor="#FFFFFF"
             android:textSize="120sp"
+            android:fontFamily="@font/jersey10_regular"
             app:layout_constraintBottom_toBottomOf="@+id/label_timeStartDelimiter"
             app:layout_constraintEnd_toStartOf="@+id/label_timeStartDelimiter"
             app:layout_constraintHorizontal_bias="1.0"
@@ -170,6 +188,7 @@
             android:textAlignment="center"
             android:textColor="#FFFFFF"
             android:textSize="120sp"
+            android:fontFamily="@font/jersey10_regular"
             app:layout_constraintBottom_toTopOf="@id/guideline"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
@@ -185,6 +204,7 @@
             android:textAlignment="viewStart"
             android:textColor="#FFFFFF"
             android:textSize="120sp"
+            android:fontFamily="@font/jersey10_regular"
             app:layout_constraintBottom_toBottomOf="@+id/label_timeStartDelimiter"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintHorizontal_bias="0.0"
@@ -201,6 +221,7 @@
             android:textAlignment="center"
             android:textColor="#FFFFFF"
             android:textSize="34sp"
+            android:fontFamily="@font/jersey10_regular"
             app:layout_constraintBottom_toTopOf="@+id/label_timeEndDelimiter"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent" />
@@ -214,6 +235,7 @@
             android:textAlignment="textEnd"
             android:textColor="#FFFFFF"
             android:textSize="120sp"
+            android:fontFamily="@font/jersey10_regular"
             app:layout_constraintBottom_toBottomOf="@+id/label_timeEndDelimiter"
             app:layout_constraintEnd_toStartOf="@+id/label_timeEndDelimiter"
             app:layout_constraintHorizontal_bias="1.0"
@@ -228,6 +250,7 @@
             android:textAlignment="center"
             android:textColor="#FFFFFF"
             android:textSize="120sp"
+            android:fontFamily="@font/jersey10_regular"
             app:layout_constraintBottom_toTopOf="@+id/guideline"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
@@ -243,6 +266,7 @@
             android:textAlignment="viewStart"
             android:textColor="#FFFFFF"
             android:textSize="120sp"
+            android:fontFamily="@font/jersey10_regular"
             app:layout_constraintBottom_toBottomOf="@+id/label_timeEndDelimiter"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintHorizontal_bias="0.0"
