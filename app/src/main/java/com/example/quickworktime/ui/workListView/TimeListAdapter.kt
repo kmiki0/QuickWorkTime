@@ -222,6 +222,7 @@ class TimeListAdapter(
 			setMessage("${date.substring(0, 4)}/${date.substring(4, 6)}/${date.substring(6, 8)} のデータを削除しますか？")
 			setPositiveButton("Yes") { _, _ ->
 				vm.deleteWorkInfo(workInfo)
+				vm.getListData(date.substring(0, 6))
 			}
 			setNegativeButton("No") { dialog, _ ->
 				// Noが押されたときの処理

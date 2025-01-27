@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    style="@style/CustomButton"
+    >
+
+    <!-- 縦並び -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="start"
+        android:orientation="vertical"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        >
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="start"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            >
+
+            <TextView
+                android:id="@+id/popupTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginRight="10dp"
+                android:fontFamily="@font/jersey10_regular"
+                android:text="[ Setting ]"
+                android:textColor="@color/white"
+                android:textSize="30sp" />
+
+            <TextView
+                android:id="@+id/popupTitle2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/jersey10_regular"
+                android:text="Work Time"
+                android:textColor="@color/white"
+                android:textSize="35sp" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/noteText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="定時時刻を設定してください"
+            android:textColor="@color/gray"
+            android:textSize="15sp"
+            android:layout_marginVertical="10dp"
+            android:layout_weight="2"
+            />
+
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="start"
+            android:layout_marginVertical="10dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            >
+
+                <EditText
+                    android:id="@+id/startTime"
+                    android:layout_width="111dp"
+                    android:layout_height="39dp"
+                    android:background="@color/white"
+                    android:textColor="@color/status_bar"
+                    android:focusable="false"
+                    android:inputType="none"
+                    tools:layout_editor_absoluteX="5dp"
+                    tools:layout_editor_absoluteY="91dp" />
+
+                <TextView
+                    android:id="@+id/tilde"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="~"
+                    android:textColor="@color/white"
+                    android:textSize="20sp"
+                    android:layout_marginHorizontal="10dp"
+                    tools:layout_editor_absoluteX="125dp"
+                    tools:layout_editor_absoluteY="91dp" />
+
+                <EditText
+                    android:id="@+id/endTime"
+                    android:layout_width="111dp"
+                    android:layout_height="39dp"
+                    android:background="@color/white"
+                    android:textColor="@color/status_bar"
+                    android:focusable="false"
+                    android:inputType="none"
+                    tools:layout_editor_absoluteX="125dp"
+                    tools:layout_editor_absoluteY="91dp" />
+
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/popupButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end"
+            android:fontFamily="@font/jersey10_regular"
+            android:text="OK"
+            tools:layout_editor_absoluteX="252dp"
+            tools:layout_editor_absoluteY="98dp" />
+
+    </LinearLayout>
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>

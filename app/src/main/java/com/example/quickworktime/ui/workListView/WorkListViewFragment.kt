@@ -14,6 +14,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.quickworktime.R
 import com.example.quickworktime.databinding.FragmentDashboardBinding
+import com.example.quickworktime.ui.popup.WorkTimePopup
 import com.google.android.material.navigation.NavigationView
 import java.util.Calendar
 
@@ -87,11 +88,11 @@ class WorkListViewFragment : Fragment() {
         navView.setNavigationItemSelectedListener { menuItem ->
             when (menuItem.itemId) {
                 R.id.settingWorkTime -> {
-                    showCustomPopup("First Item")
+                    WorkTimePopup(requireContext()).show()
                     true
                 }
                 R.id.settingWeekday -> {
-                    showCustomPopup("Second Item")
+                    showCustomPopup(R.layout.custom_popup, "Second Item")
                     true
                 }
                 else -> false
@@ -99,15 +100,15 @@ class WorkListViewFragment : Fragment() {
         }
     }
 
-    private fun showCustomPopup(message: String) {
-        val dialogView = LayoutInflater.from(context).inflate(R.layout.custom_popup, null)
+    private fun showCustomPopup(ui: Int, message: String) {
+        val dialogView = LayoutInflater.from(context).inflate(ui, null)
         val dialogBuilder = AlertDialog.Builder(context)
             .setView(dialogView)
 
         val alertDialog = dialogBuilder.create()
         alertDialog.show()
 
-        dialogView.findViewById<TextView>(R.id.popupMessage).text = message
+//        dialogView.findViewById<TextView>(R.id.popupMessage).text = message
         dialogView.findViewById<Button>(R.id.popupButton).setOnClickListener {
             alertDialog.dismiss()
         }
