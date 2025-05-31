@@ -21,7 +21,7 @@
 
     <group android:checkableBehavior="single">
         <item
-            android:id="@+id/calWorkTime"
+            android:id="@+id/attendanceCalculation"
             android:title="勤務時間" />
         <item
             android:id="@+id/calBreakTime"

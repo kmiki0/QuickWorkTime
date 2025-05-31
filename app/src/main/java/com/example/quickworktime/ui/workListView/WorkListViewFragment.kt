@@ -15,6 +15,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.quickworktime.R
 import com.example.quickworktime.databinding.FragmentDashboardBinding
 import com.example.quickworktime.ui.popup.WorkTimePopup
+import com.example.quickworktime.ui.popup.AttendanceCalculationPopup
 import com.google.android.material.navigation.NavigationView
 import java.util.Calendar
 
@@ -89,6 +90,10 @@ class WorkListViewFragment : Fragment() {
             when (menuItem.itemId) {
                 R.id.settingWorkTime -> {
                     WorkTimePopup(requireContext()).show()
+                    true
+                }
+                R.id.attendanceCalculation -> {
+                    AttendanceCalculationPopup(requireContext()).show()
                     true
                 }
                 R.id.settingWeekday -> {
@@ -205,4 +210,3 @@ class WorkListViewFragment : Fragment() {
         }
     }
 }
-

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 長押し時の状態 -->
+    <item android:state_pressed="true">
+        <shape android:shape="rectangle">
+            <solid android:color="#FFDDDDDD" /> <!-- 押下時の背景色 -->
+            <stroke android:width="2dp" android:color="#FF0000FF" /> <!-- 押下時の枠線色（青） -->
+            <corners android:radius="4dp" />
+        </shape>
+    </item>
+    <!-- 通常時の状態 -->
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="#FFFFFFFF" /> <!-- 通常時の背景色（白） -->
+            <stroke android:width="1dp" android:color="#FF888888" /> <!-- 通常時の枠線色（グレー） -->
+            <corners android:radius="4dp" />
+        </shape>
+    </item>
+</selector>
