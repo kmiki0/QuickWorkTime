@@ -1,7 +1,9 @@
 package com.example.quickworktime.ui.home
+
 import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
 import android.animation.ObjectAnimator
+import android.animation.AnimatorSet
 import android.annotation.SuppressLint
 import android.transition.ChangeBounds
 import android.transition.TransitionManager
@@ -35,10 +37,11 @@ class HomeFragment : Fragment() {
     val txtSizeNormal: Float = 300f
     val txtSizeMax: Float = 400f
 
-    // アクティブ状態のテキストフィールド
-
     // ViewModelを生成
     private val vm: HomeViewModel by viewModels()
+
+    // FAB関連のフラグ
+    private var isFabOpen = false
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -66,10 +69,293 @@ class HomeFragment : Fragment() {
         // GridLayoutのボタンにラベルを設定する
         showGridLayout()
 
+        // ★ FAB関連のセットアップを追加
+        setupFloatingActionButtons()
+
         binding.constraintLayout.setOnClickListener{
             vm.updateActiveTextState(HomeViewModel.ActiveText.DEFAULT)
+            // FABメニューが開いている場合は閉じる
+            if (isFabOpen) {
+                closeFabMenu()
+            }
         }
 
+        // 既存のTextViewクリックイベント（省略 - 元のコードと同じ）
+        setupTextViewClickEvents()
+    }
+
+    /**
+     * ★ フローティングボタンのセットアップ
+     */
+    private fun setupFloatingActionButtons() {
+        // メインFABのクリックイベント
+        binding.fabMain.setOnClickListener {
+            if (isFabOpen) {
+                closeFabMenu()
+            } else {
+                openFabMenu()
+            }
+        }
+
+        // サブFABのクリックイベント
+        binding.fabAddPerson.setOnClickListener {
+            handleFabClick("Person")
+            closeFabMenu()
+        }
+
+        binding.fabAddAlarm.setOnClickListener {
+            handleFabClick("Alarm")
+            closeFabMenu()
+        }
+
+        binding.fabAddItem.setOnClickListener {
+            handleFabClick("Item")
+            closeFabMenu()
+        }
+
+        // ラベルのクリックイベント（FABと同じ動作）
+        binding.labelAddPerson.setOnClickListener {
+            handleFabClick("Person")
+            closeFabMenu()
+        }
+
+        binding.labelAddAlarm.setOnClickListener {
+            handleFabClick("Alarm")
+            closeFabMenu()
+        }
+
+        binding.labelAddItem.setOnClickListener {
+            handleFabClick("Item")
+            closeFabMenu()
+        }
+    }
+
+    companion object {
+        private const val FAB_DISTANCE = 180f  // FABからの距離
+        private const val LABEL_OFFSET = 150f  // ラベルのオフセット
+    }
+
+    private fun openFabMenu() {
+        isFabOpen = true
+
+        // メインFABを回転させる
+        val mainFabRotation = ObjectAnimator.ofFloat(binding.fabMain, "rotation", 0f, 45f)
+        mainFabRotation.duration = 300
+
+        // 角度と距離からサブFABの位置を計算
+        val fabConfigs = listOf(
+            // 左 (180度)
+            createFabConfig(
+                fab = binding.fabAddItem,
+                label = binding.labelAddItem,
+                angle = 180f,
+                distance = FAB_DISTANCE
+            ),
+            // 左上45度 (135度)
+            createFabConfig(
+                fab = binding.fabAddAlarm,
+                label = binding.labelAddAlarm,
+                angle = 135f,
+                distance = FAB_DISTANCE
+            ),
+            // 上 (90度)
+            createFabConfig(
+                fab = binding.fabAddPerson,
+                label = binding.labelAddPerson,
+                angle = 90f,
+                distance = FAB_DISTANCE
+            )
+        )
+
+        // アニメーション実行
+        fabConfigs.forEachIndexed { index, config ->
+            animateFabOpen(config, index * 80L)
+        }
+
+        mainFabRotation.start()
+    }
+
+    /**
+     * 角度と距離からFAB設定を作成
+     */
+    private fun createFabConfig(
+        fab: com.google.android.material.floatingactionbutton.FloatingActionButton,
+        label: TextView,
+        angle: Float,
+        distance: Float
+    ): FabAnimationConfig {
+        val radians = Math.toRadians(angle.toDouble())
+        val deltaX = (distance * Math.cos(radians)).toFloat()
+        val deltaY = -(distance * Math.sin(radians)).toFloat() // Y軸は上が負
+
+        // ラベルのオフセット計算（FABの左側に配置）
+        val labelOffsetX = when {
+            angle > 90f && angle < 270f -> -LABEL_OFFSET // 左側の場合
+            angle < 90f || angle > 270f -> LABEL_OFFSET  // 右側の場合
+            else -> 0f // 真上・真下の場合
+        }
+
+        return FabAnimationConfig(
+            fab = fab,
+            label = label,
+            fabX = deltaX,
+            fabY = deltaY,
+            labelX = deltaX + labelOffsetX,
+            labelY = deltaY
+        )
+    }
+
+    /**
+     * FAB展開アニメーション
+     */
+    private fun animateFabOpen(config: FabAnimationConfig, delay: Long) {
+        // 表示
+        config.fab.visibility = View.VISIBLE
+        config.label.visibility = View.VISIBLE
+
+        // 初期位置設定
+        config.fab.translationX = 0f
+        config.fab.translationY = 0f
+        config.fab.alpha = 0f
+        config.fab.scaleX = 0f
+        config.fab.scaleY = 0f
+
+        config.label.translationX = 0f
+        config.label.translationY = 0f
+        config.label.alpha = 0f
+        config.label.scaleX = 0f
+        config.label.scaleY = 0f
+
+        // FABのアニメーション
+        val fabTranslateX = ObjectAnimator.ofFloat(config.fab, "translationX", 0f, config.fabX)
+        val fabTranslateY = ObjectAnimator.ofFloat(config.fab, "translationY", 0f, config.fabY)
+        val fabAlpha = ObjectAnimator.ofFloat(config.fab, "alpha", 0f, 1f)
+        val fabScaleX = ObjectAnimator.ofFloat(config.fab, "scaleX", 0f, 1f)
+        val fabScaleY = ObjectAnimator.ofFloat(config.fab, "scaleY", 0f, 1f)
+
+        val fabAnimatorSet = AnimatorSet()
+        fabAnimatorSet.playTogether(fabTranslateX, fabTranslateY, fabAlpha, fabScaleX, fabScaleY)
+        fabAnimatorSet.duration = 300
+        fabAnimatorSet.startDelay = delay
+
+        // ラベルのアニメーション
+        val labelTranslateX = ObjectAnimator.ofFloat(config.label, "translationX", 0f, config.labelX)
+        val labelTranslateY = ObjectAnimator.ofFloat(config.label, "translationY", 0f, config.labelY)
+        val labelAlpha = ObjectAnimator.ofFloat(config.label, "alpha", 0f, 1f)
+        val labelScaleX = ObjectAnimator.ofFloat(config.label, "scaleX", 0f, 1f)
+        val labelScaleY = ObjectAnimator.ofFloat(config.label, "scaleY", 0f, 1f)
+
+        val labelAnimatorSet = AnimatorSet()
+        labelAnimatorSet.playTogether(labelTranslateX, labelTranslateY, labelAlpha, labelScaleX, labelScaleY)
+        labelAnimatorSet.duration = 300
+        labelAnimatorSet.startDelay = delay + 100
+
+        fabAnimatorSet.start()
+        labelAnimatorSet.start()
+    }
+
+    /**
+     * FAB設定用のデータクラス
+     */
+    private data class FabAnimationConfig(
+        val fab: com.google.android.material.floatingactionbutton.FloatingActionButton,
+        val label: TextView,
+        val fabX: Float,
+        val fabY: Float,
+        val labelX: Float,
+        val labelY: Float
+    )
+
+    /**
+     * FABメニューを閉じる
+     */
+    private fun closeFabMenu() {
+        isFabOpen = false
+
+        val mainFabRotation = ObjectAnimator.ofFloat(binding.fabMain, "rotation", 45f, 0f)
+        mainFabRotation.duration = 300
+
+        val fabData = listOf(
+            Triple(binding.fabAddItem, binding.labelAddItem, Pair(-80f, 0f)),
+            Triple(binding.fabAddAlarm, binding.labelAddAlarm, Pair(-56.6f, -56.6f)),
+            Triple(binding.fabAddPerson, binding.labelAddPerson, Pair(0f, -80f))
+        )
+
+        fabData.forEachIndexed { index, (fab, label, position) ->
+            // ★ 重要: 逆順のdelayを計算
+            val delay = (fabData.size - 1 - index) * 50L
+
+            // FABのアニメーション
+            val fabTranslateX = ObjectAnimator.ofFloat(fab, "translationX", fab.translationX, 0f)
+            val fabTranslateY = ObjectAnimator.ofFloat(fab, "translationY", fab.translationY, 0f)
+            val fabAlpha = ObjectAnimator.ofFloat(fab, "alpha", 1f, 0f)
+            val fabScaleX = ObjectAnimator.ofFloat(fab, "scaleX", 1f, 0f)
+            val fabScaleY = ObjectAnimator.ofFloat(fab, "scaleY", 1f, 0f)
+
+            val fabAnimatorSet = AnimatorSet()
+            fabAnimatorSet.playTogether(fabTranslateX, fabTranslateY, fabAlpha, fabScaleX, fabScaleY)
+            fabAnimatorSet.duration = 200
+            fabAnimatorSet.startDelay = delay
+
+            // ラベルのアニメーション
+            val labelTranslateX = ObjectAnimator.ofFloat(label, "translationX", label.translationX, 0f)
+            val labelTranslateY = ObjectAnimator.ofFloat(label, "translationY", label.translationY, 0f)
+            val labelAlpha = ObjectAnimator.ofFloat(label, "alpha", 1f, 0f)
+            val labelScaleX = ObjectAnimator.ofFloat(label, "scaleX", 1f, 0f)
+            val labelScaleY = ObjectAnimator.ofFloat(label, "scaleY", 1f, 0f)
+
+            val labelAnimatorSet = AnimatorSet()
+            labelAnimatorSet.playTogether(labelTranslateX, labelTranslateY, labelAlpha, labelScaleX, labelScaleY)
+            labelAnimatorSet.duration = 200
+            labelAnimatorSet.startDelay = delay
+
+            // アニメーション終了後に非表示
+            fabAnimatorSet.addListener(object : AnimatorListenerAdapter() {
+                override fun onAnimationEnd(animation: Animator) {
+                    fab.visibility = View.GONE
+                }
+            })
+
+            labelAnimatorSet.addListener(object : AnimatorListenerAdapter() {
+                override fun onAnimationEnd(animation: Animator) {
+                    label.visibility = View.GONE
+                }
+            })
+
+            fabAnimatorSet.start()
+            labelAnimatorSet.start()
+        }
+
+        mainFabRotation.start()
+    }
+
+    /**
+     * FABクリック時の処理
+     */
+    private fun handleFabClick(action: String) {
+        // 振動フィードバック
+        binding.fabMain.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+
+        when (action) {
+            "Person" -> {
+                Toast.makeText(requireContext(), "Add Person clicked", Toast.LENGTH_SHORT).show()
+                // ここに実際の処理を追加
+            }
+            "Alarm" -> {
+                Toast.makeText(requireContext(), "Add Alarm clicked", Toast.LENGTH_SHORT).show()
+                // ここに実際の処理を追加
+            }
+            "Item" -> {
+                Toast.makeText(requireContext(), "Add Item clicked", Toast.LENGTH_SHORT).show()
+                // ここに実際の処理を追加
+            }
+        }
+    }
+
+    /**
+     * 既存のTextViewクリックイベント処理をまとめたメソッド
+     */
+    private fun setupTextViewClickEvents() {
         /**
          * StartTime (HH) タップ イベント
          */
@@ -79,42 +365,21 @@ class HomeFragment : Fragment() {
             vm.setActiveTextView(binding.textTimeStartHH)
 
             if (state == HomeViewModel.ActiveText.START && txtView.textSize == txtSizeMax) {
-                /**
-                 * 状態 = START かつ テキストサイズが最大の場合
-                 */
-                // StateをDefaultに変更
                 vm.updateActiveTextState(HomeViewModel.ActiveText.DEFAULT)
             } else if (state == HomeViewModel.ActiveText.START && txtView.textSize == txtSizeNormal) {
-                /**
-                 * 状態 = START かつ テキストサイズが通常の場合
-                 */
-                // textTimeStartHH のみ大きく + 透過度を1.0に
                 AnimationUtils.animateFullFontSize(binding.textTimeStartHH, binding.textTimeStartHH.textSize, txtSizeMax)
                 AnimationUtils.animateTextAlpha(binding.textTimeStartHH, binding.textTimeStartHH.alpha, 1.0f)
-                // textTimeStartMM のみ通常に + 透過度を0.5に
                 AnimationUtils.animateFullFontSize(binding.textTimeStartMM, binding.textTimeStartMM.textSize, txtSizeNormal)
                 AnimationUtils.animateTextAlpha(binding.textTimeStartMM, binding.textTimeStartMM.alpha, 0.5f)
-                // ボタンのラベルを設定
                 setGridBtnLabel(0)
                 vm.setActiveTextView(binding.textTimeStartHH)
             }else if (state == HomeViewModel.ActiveText.DEFAULT) {
-                /**
-                 * 状態 = Default の場合
-                 */
-                // StateをSTARTに変更
-//                binding.textTimeStartHH.layoutParams.height = (binding.textTimeStartHH.height * 1.5).toInt()
                 vm.updateActiveTextState(HomeViewModel.ActiveText.START)
-                // layoutHeight * 1.3 に変更
                 AnimationUtils.animateFullFontSize(binding.textTimeStartHH, binding.textTimeStartHH.textSize, txtSizeMax)
                 AnimationUtils.animateTextAlpha(binding.textTimeStartHH, binding.textTimeStartHH.alpha, 1.0f)
-                // ボタンのラベルを設定
                 setGridBtnLabel(0)
                 vm.setActiveTextView(binding.textTimeStartHH)
             } else if ( state == HomeViewModel.ActiveText.END) {
-                /**
-                 * 状態 = END の場合
-                 */
-                // StateをDEFAULTに変更
                 vm.updateActiveTextState(HomeViewModel.ActiveText.DEFAULT)
             }
         }
@@ -128,40 +393,21 @@ class HomeFragment : Fragment() {
             vm.setActiveTextView(binding.textTimeStartMM)
 
             if (state == HomeViewModel.ActiveText.START && txtView.textSize == txtSizeMax) {
-                /**
-                 * 状態 = START かつ テキストサイズが最大の場合
-                 */
-                 // StateをDefaultに変更
-                 vm.updateActiveTextState(HomeViewModel.ActiveText.DEFAULT)
+                vm.updateActiveTextState(HomeViewModel.ActiveText.DEFAULT)
             } else if (state == HomeViewModel.ActiveText.START && txtView.textSize == txtSizeNormal) {
-                /**
-                 * 状態 = START かつ テキストサイズが通常の場合
-                 */
-                // textTimeStartMM のみ大きく + 透過度を1.0に
                 AnimationUtils.animateFullFontSize(binding.textTimeStartMM, binding.textTimeStartMM.textSize, txtSizeMax)
                 AnimationUtils.animateTextAlpha(binding.textTimeStartMM, binding.textTimeStartMM.alpha, 1.0f)
-                // textTimeStartHH のみ通常に + 透過度を0.5に
                 AnimationUtils.animateFullFontSize(binding.textTimeStartHH, binding.textTimeStartHH.textSize, txtSizeNormal)
                 AnimationUtils.animateTextAlpha(binding.textTimeStartHH, binding.textTimeStartHH.alpha, 0.5f)
-                // ボタンのラベルを設定
                 setGridBtnLabel(2)
                 vm.setActiveTextView(binding.textTimeStartMM)
             }else if (state == HomeViewModel.ActiveText.DEFAULT) {
-                /**
-                 * 状態 = Default の場合
-                 */
-                // StateをSTARTに変更
                 vm.updateActiveTextState(HomeViewModel.ActiveText.START)
                 AnimationUtils.animateFullFontSize(binding.textTimeStartMM, binding.textTimeStartMM.textSize, txtSizeMax)
                 AnimationUtils.animateTextAlpha(binding.textTimeStartMM, binding.textTimeStartMM.alpha, 1.0f)
-                // ボタンのラベルを設定
                 setGridBtnLabel(2)
                 vm.setActiveTextView(binding.textTimeStartMM)
             } else if ( state == HomeViewModel.ActiveText.END) {
-                /**
-                 * 状態 = END の場合
-                 */
-                // StateをDEFAULTに変更
                 vm.updateActiveTextState(HomeViewModel.ActiveText.DEFAULT)
             }
         }
@@ -175,40 +421,21 @@ class HomeFragment : Fragment() {
             vm.setActiveTextView(binding.textTimeEndHH)
 
             if (state == HomeViewModel.ActiveText.END && txtView.textSize == txtSizeMax) {
-                /**
-                 * 状態 = END かつ テキストサイズが最大の場合
-                 */
-                // StateをDefaultに変更
                 vm.updateActiveTextState(HomeViewModel.ActiveText.DEFAULT)
             } else if (state == HomeViewModel.ActiveText.END && txtView.textSize == txtSizeNormal) {
-                /**
-                 * 状態 = END かつ テキストサイズが通常の場合
-                 */
-                // textTimeEndHH のみ大きく + 透過度を1.0に
                 AnimationUtils.animateFullFontSize(binding.textTimeEndHH, binding.textTimeEndHH.textSize, txtSizeMax)
                 AnimationUtils.animateTextAlpha(binding.textTimeEndHH, binding.textTimeEndHH.alpha, 1.0f)
-                // textTimeEndMM のみ通常に + 透過度を0.5に
                 AnimationUtils.animateFullFontSize(binding.textTimeEndMM, binding.textTimeEndMM.textSize, txtSizeNormal)
                 AnimationUtils.animateTextAlpha(binding.textTimeEndMM, binding.textTimeEndMM.alpha, 0.5f)
-                // ボタンのラベルを設定
                 setGridBtnLabel(1)
                 vm.setActiveTextView(binding.textTimeEndHH)
             }else if (state == HomeViewModel.ActiveText.DEFAULT) {
-                /**
-                 * 状態 = Default の場合
-                 */
-                // StateをENDに変更
                 vm.updateActiveTextState(HomeViewModel.ActiveText.END)
                 AnimationUtils.animateFullFontSize(binding.textTimeEndHH, binding.textTimeEndHH.textSize, txtSizeMax)
                 AnimationUtils.animateTextAlpha(binding.textTimeEndHH, binding.textTimeEndHH.alpha, 1.0f)
-                // ボタンのラベルを設定
                 setGridBtnLabel(1)
                 vm.setActiveTextView(binding.textTimeEndHH)
             } else if ( state == HomeViewModel.ActiveText.START) {
-                /**
-                 * 状態 = START の場合
-                 */
-                // StateをDEFAULTに変更
                 vm.updateActiveTextState(HomeViewModel.ActiveText.DEFAULT)
             }
         }
@@ -222,40 +449,21 @@ class HomeFragment : Fragment() {
             vm.setActiveTextView(binding.textTimeEndMM)
 
             if (state == HomeViewModel.ActiveText.END && txtView.textSize == txtSizeMax) {
-                /**
-                 * 状態 = END かつ テキストサイズが最大の場合
-                 */
-                // StateをDefaultに変更
                 vm.updateActiveTextState(HomeViewModel.ActiveText.DEFAULT)
             } else if (state == HomeViewModel.ActiveText.END && txtView.textSize == txtSizeNormal) {
-                /**
-                 * 状態 = END かつ テキストサイズが通常の場合
-                 */
-                // textTimeEndMM のみ大きく + 透過度を1.0に
                 AnimationUtils.animateFullFontSize(binding.textTimeEndMM, binding.textTimeEndMM.textSize, txtSizeMax)
                 AnimationUtils.animateTextAlpha(binding.textTimeEndMM, binding.textTimeEndMM.alpha, 1.0f)
-                // textTimeEndHH のみ通常に + 透過度を0.5に
                 AnimationUtils.animateFullFontSize(binding.textTimeEndHH, binding.textTimeEndHH.textSize, txtSizeNormal)
                 AnimationUtils.animateTextAlpha(binding.textTimeEndHH, binding.textTimeEndHH.alpha, 0.5f)
-                // ボタンのラベルを設定
                 setGridBtnLabel(2)
                 vm.setActiveTextView(binding.textTimeEndMM)
             }else if (state == HomeViewModel.ActiveText.DEFAULT) {
-                /**
-                 * 状態 = Default の場合
-                 */
-                // StateをENDに変更
                 vm.updateActiveTextState(HomeViewModel.ActiveText.END)
                 AnimationUtils.animateFullFontSize(binding.textTimeEndMM, binding.textTimeEndMM.textSize, txtSizeMax)
                 AnimationUtils.animateTextAlpha(binding.textTimeEndMM, binding.textTimeEndMM.alpha, 1.0f)
-                // ボタンのラベルを設定
                 setGridBtnLabel(2)
                 vm.setActiveTextView(binding.textTimeEndMM)
             } else if ( state == HomeViewModel.ActiveText.START) {
-                /**
-                 * 状態 = START の場合
-                 */
-                // StateをDEFAULTに変更
                 vm.updateActiveTextState(HomeViewModel.ActiveText.DEFAULT)
             }
         }
@@ -290,7 +498,7 @@ class HomeFragment : Fragment() {
         }
     }
 
-	private fun setDisplayByArgument() {
+    private fun setDisplayByArgument() {
 
         // 値が取れない場合、Null で初期化
         val date: String? = arguments?.getString("date")

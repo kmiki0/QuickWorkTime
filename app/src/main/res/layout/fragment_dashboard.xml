@@ -15,16 +15,17 @@
         tools:context=".ui.workListView.WorkListViewFragment">
 
         <!-- ヘッダー部分 -->
+        <!-- 戻るボタン -->
         <Button
             android:id="@+id/btnBackMonth"
             android:layout_width="30dp"
             android:layout_height="40dp"
             android:layout_marginStart="16dp"
             android:layout_marginEnd="4dp"
-            android:background="#00FFFFFF"
+            android:background="@drawable/nav_button_selector"
             android:text="&lt;"
             android:textSize="20sp"
-            android:textColor="#FFFFFF"
+            android:textColor="@color/nav_button_text_color"
             android:fontFamily="@font/jersey10_regular"
             app:layout_constraintBottom_toBottomOf="@+id/monthText"
             app:layout_constraintEnd_toStartOf="@+id/monthText"
@@ -44,15 +45,16 @@
             app:layout_constraintStart_toEndOf="@+id/btnBackMonth"
             app:layout_constraintTop_toTopOf="parent" />
 
+        <!-- 次へボタン -->
         <Button
             android:id="@+id/btnNextMonth"
             android:layout_width="30dp"
             android:layout_height="40dp"
             android:layout_marginStart="2dp"
             android:layout_marginEnd="232dp"
-            android:background="#00FFFFFF"
+            android:background="@drawable/nav_button_selector"
             android:text="&gt;"
-            android:textColor="#FFFFFF"
+            android:textColor="@color/nav_button_text_color"
             android:textSize="20sp"
             android:fontFamily="@font/jersey10_regular"
             app:layout_constraintBottom_toBottomOf="@+id/monthText"
@@ -66,7 +68,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_margin="16dp"
-            android:text="156.20 h"
+            android:text="0.00 h"
             android:textColor="#FFFFFF"
             android:textSize="60sp"
             android:fontFamily="@font/jersey10_regular"

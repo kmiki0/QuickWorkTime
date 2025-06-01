@@ -16,6 +16,7 @@
         android:background="@color/base_background_color"
         tools:context=".ui.home.HomeFragment">
 
+        <!-- 日付表示部分 -->
         <LinearLayout
             android:id="@+id/linear_date"
             android:layout_width="match_parent"
@@ -34,14 +35,12 @@
                 android:textSize="55sp"
                 tools:text="2024/12/01"
                 android:layout_marginEnd="10dp"
-                android:fontFamily="@font/jersey10_regular"
-                />
+                android:fontFamily="@font/jersey10_regular" />
 
             <androidx.constraintlayout.widget.ConstraintLayout
                 android:id="@+id/constraintLayout2"
                 android:layout_width="wrap_content"
-                android:layout_height="match_parent"
-                >
+                android:layout_height="match_parent">
 
                 <TextView
                     android:id="@+id/text_week"
@@ -62,7 +61,7 @@
 
         </LinearLayout>
 
-
+        <!-- GridLayout -->
         <androidx.gridlayout.widget.GridLayout
             android:id="@+id/gridBtnLayout"
             android:layout_width="match_parent"
@@ -211,7 +210,6 @@
             app:layout_constraintStart_toEndOf="@+id/label_timeStartDelimiter"
             app:layout_constraintTop_toTopOf="@+id/label_timeStartDelimiter" />
 
-
         <!-- Work End -->
         <TextView
             android:id="@+id/label_timeEnd"
@@ -273,29 +271,138 @@
             app:layout_constraintStart_toEndOf="@+id/label_timeEndDelimiter"
             app:layout_constraintTop_toTopOf="@+id/label_timeEndDelimiter" />
 
-
         <!-- 粒子アニメーション用のカスタムビュー -->
-            <com.example.quickworktime.view.ParticleAnimationView
-                android:id="@+id/particleView1"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent" />
+        <com.example.quickworktime.view.ParticleAnimationView
+            android:id="@+id/particleView1"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
 
-            <com.example.quickworktime.view.ParticleAnimationView
-                android:id="@+id/particleView2"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent" />
+        <com.example.quickworktime.view.ParticleAnimationView
+            android:id="@+id/particleView2"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
 
-            <com.example.quickworktime.view.ParticleAnimationView
-                android:id="@+id/particleView3"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent" />
+        <com.example.quickworktime.view.ParticleAnimationView
+            android:id="@+id/particleView3"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
 
-            <com.example.quickworktime.view.ParticleAnimationView
-                android:id="@+id/particleView4"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                tools:layout_editor_absoluteX="0dp"
-                tools:layout_editor_absoluteY="16dp" />
+        <com.example.quickworktime.view.ParticleAnimationView
+            android:id="@+id/particleView4"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+        <!-- メインFAB -->
+
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fab_main"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="16dp"
+            android:layout_marginBottom="40dp"
+            android:src="@android:drawable/ic_input_add"
+            app:backgroundTint="#4CAF50"
+            app:layout_constraintBottom_toTopOf="@+id/guideline"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:tint="@color/white" />
+
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fab_add_item"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/ic_dashboard_black_24dp"
+            android:visibility="gone"
+            app:backgroundTint="#4CAF50"
+            app:fabSize="mini"
+            app:tint="@color/white"
+            app:layout_constraintBottom_toBottomOf="@+id/fab_main"
+            app:layout_constraintEnd_toEndOf="@+id/fab_main"
+            app:layout_constraintStart_toStartOf="@+id/fab_main"
+            app:layout_constraintTop_toTopOf="@+id/fab_main" />
+
+        <!-- サブFAB2: Add Alarm（左上45度に展開） -->
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fab_add_alarm"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/ic_notifications_black_24dp"
+            android:visibility="gone"
+            app:backgroundTint="#4CAF50"
+            app:fabSize="mini"
+            app:tint="@color/white"
+            app:layout_constraintBottom_toBottomOf="@+id/fab_main"
+            app:layout_constraintEnd_toEndOf="@+id/fab_main"
+            app:layout_constraintStart_toStartOf="@+id/fab_main"
+            app:layout_constraintTop_toTopOf="@+id/fab_main" />
+
+        <!-- サブFAB3: Add Person（上に展開） -->
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fab_add_person"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/ic_home_black_24dp"
+            android:visibility="gone"
+            app:backgroundTint="#4CAF50"
+            app:fabSize="mini"
+            app:tint="@color/white"
+            app:layout_constraintBottom_toBottomOf="@+id/fab_main"
+            app:layout_constraintEnd_toEndOf="@+id/fab_main"
+            app:layout_constraintStart_toStartOf="@+id/fab_main"
+            app:layout_constraintTop_toTopOf="@+id/fab_main" />
+
+        <!-- ラベル1: Add Item -->
+        <TextView
+            android:id="@+id/label_add_item"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/fab_label_background"
+            android:fontFamily="@font/jersey10_regular"
+            android:paddingHorizontal="12dp"
+            android:paddingVertical="6dp"
+            android:text="Add Item"
+            android:textColor="@color/white"
+            android:textSize="14sp"
+            android:visibility="gone"
+            app:layout_constraintBottom_toBottomOf="@+id/fab_main"
+            app:layout_constraintEnd_toEndOf="@+id/fab_main"
+            app:layout_constraintStart_toStartOf="@+id/fab_main"
+            app:layout_constraintTop_toTopOf="@+id/fab_main" />
+
+        <!-- ラベル2: Add Alarm -->
+        <TextView
+            android:id="@+id/label_add_alarm"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/fab_label_background"
+            android:fontFamily="@font/jersey10_regular"
+            android:paddingHorizontal="12dp"
+            android:paddingVertical="6dp"
+            android:text="Add Alarm"
+            android:textColor="@color/white"
+            android:textSize="14sp"
+            android:visibility="gone"
+            app:layout_constraintBottom_toBottomOf="@+id/fab_main"
+            app:layout_constraintEnd_toEndOf="@+id/fab_main"
+            app:layout_constraintStart_toStartOf="@+id/fab_main"
+            app:layout_constraintTop_toTopOf="@+id/fab_main" />
+
+        <!-- ラベル3: Add Person -->
+        <TextView
+            android:id="@+id/label_add_person"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/fab_label_background"
+            android:fontFamily="@font/jersey10_regular"
+            android:paddingHorizontal="12dp"
+            android:paddingVertical="6dp"
+            android:text=""
+            android:textColor="@color/white"
+            android:textSize="14sp"
+            android:visibility="gone"
+            app:layout_constraintBottom_toBottomOf="@+id/fab_main"
+            app:layout_constraintEnd_toEndOf="@+id/fab_main"
+            app:layout_constraintStart_toStartOf="@+id/fab_main"
+            app:layout_constraintTop_toTopOf="@+id/fab_main" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 </layout>

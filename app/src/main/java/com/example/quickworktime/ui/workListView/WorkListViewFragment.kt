@@ -7,6 +7,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.TextView
+import androidx.core.content.ContextCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
@@ -22,10 +23,8 @@ import java.util.Calendar
 class WorkListViewFragment : Fragment() {
 
     private lateinit var myAdapter: TimeListAdapter
-
     private var _binding: FragmentDashboardBinding? = null
     private val vm: WorkListViewViewModel by viewModels()
-
     private val binding get() = _binding!!
 
     override fun onCreateView(
@@ -57,8 +56,11 @@ class WorkListViewFragment : Fragment() {
         // 履歴ボタンの表示非表示の設定
         setHistoryButton()
 
+        // 改善されたボタンクリック処理
         binding.btnBackMonth.setOnClickListener { view ->
-            if (binding.btnBackMonth.alpha != 1.0f) return@setOnClickListener
+            // isEnabledでチェックするように変更
+            if (!binding.btnBackMonth.isEnabled) return@setOnClickListener
+
             val yyyyMM = vm.monthText.value.toString().replace("/", "")
             // 表示する月を変更
             vm.setMonthText(changeMonth(yyyyMM, -1).substring(0, 4) + "/" + changeMonth(yyyyMM, -1).substring(4, 6))
@@ -69,7 +71,9 @@ class WorkListViewFragment : Fragment() {
         }
 
         binding.btnNextMonth.setOnClickListener { view ->
-            if (binding.btnNextMonth.alpha != 1.0f) return@setOnClickListener
+            // isEnabledでチェックするように変更
+            if (!binding.btnNextMonth.isEnabled) return@setOnClickListener
+
             val yyyyMM = vm.monthText.value.toString().replace("/", "")
             // 表示する月を変更
             vm.setMonthText(changeMonth(yyyyMM, 1).substring(0, 4) + "/" + changeMonth(yyyyMM, 1).substring(4, 6))
@@ -113,7 +117,6 @@ class WorkListViewFragment : Fragment() {
         val alertDialog = dialogBuilder.create()
         alertDialog.show()
 
-//        dialogView.findViewById<TextView>(R.id.popupMessage).text = message
         dialogView.findViewById<Button>(R.id.popupButton).setOnClickListener {
             alertDialog.dismiss()
         }
@@ -124,43 +127,48 @@ class WorkListViewFragment : Fragment() {
         _binding = null
     }
 
-    // 履歴ボタンの表示非表示の設定
+    // 改善された履歴ボタンの表示非表示の設定
     private fun setHistoryButton() {
-
         // LiveDataの監視
         vm.monthText.observe(viewLifecycleOwner, { monthText ->
-
             // yyyyMM を取得
             val yyyyMM = monthText.replace("/", "")
 
-            // 前月
+            // 前月のデータ存在チェック
             val backMonth = changeMonth(yyyyMM, -1)
-
             vm.getMonthDataCount(backMonth).observe(viewLifecycleOwner, { count ->
-                if (count > 0) {
-                    binding.btnBackMonth.alpha = 1.0f
-                } else {
-                    binding.btnBackMonth.alpha = 0.2f
-                }
+                updateButtonState(binding.btnBackMonth, count > 0)
             })
 
-            // 次の月
+            // 次の月のデータ存在チェック
             val nextMonth = changeMonth(yyyyMM, 1)
             vm.getMonthDataCount(nextMonth).observe(viewLifecycleOwner, { count ->
-                if (count > 0) {
-                    binding.btnNextMonth.alpha = 1.0f
-                } else {
-                    binding.btnNextMonth.alpha = 0.2f
-                }
+                updateButtonState(binding.btnNextMonth, count > 0)
             })
 
-            // 表示する月を変更
-            binding.monthText.text = monthText
+            // 表示する月を変更（既に上でやっているのでコメントアウト）
+            // binding.monthText.text = monthText
         })
     }
 
+    /**
+     * ボタンの状態を更新する共通メソッド
+     * @param button 対象のボタン
+     * @param hasData データが存在するかどうか
+     */
+    private fun updateButtonState(button: Button, hasData: Boolean) {
+        button.isEnabled = hasData
+        // XMLでセレクターを使用している場合は、以下の手動設定は不要
+        // ただし、より明確にするために残すことも可能
+        if (hasData) {
+            button.alpha = 1.0f
+        } else {
+            button.alpha = 0.4f
+        }
+    }
+
     // 引数によって、月を変更する
-    private fun changeMonth(yyyyMM: String,  month: Int): String {
+    private fun changeMonth(yyyyMM: String, month: Int): String {
         // yyyyMM をDate型に変換
         val date = java.text.SimpleDateFormat("yyyyMM").parse(yyyyMM)
         val calendar = Calendar.getInstance()
@@ -171,7 +179,6 @@ class WorkListViewFragment : Fragment() {
     }
 
     private fun loadData() {
-
         // yyyyMM を取得
         val yyyyMM = vm.monthText.value.toString().replace("/", "")
 
