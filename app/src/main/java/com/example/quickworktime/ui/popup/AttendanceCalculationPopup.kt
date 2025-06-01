@@ -25,6 +25,7 @@ class AttendanceCalculationPopup(private val context: Context) {
     private lateinit var formulaAdapter: FormulaAdapter
     private lateinit var alertDialog: AlertDialog
     private lateinit var calculationPreview: TextView
+    private lateinit var formulaPreview: TextView
 
     fun show() {
         val dialogView = LayoutInflater.from(context).inflate(R.layout.fragment_work_list_view, null)
@@ -36,6 +37,7 @@ class AttendanceCalculationPopup(private val context: Context) {
 
         // プレビューTextViewを取得
         calculationPreview = dialogView.findViewById(R.id.calculation_preview)
+        formulaPreview = dialogView.findViewById(R.id.formula_preview)
 
         setupUpperButtons(dialogView)
         setupFormulaRecyclerView(dialogView)
@@ -59,6 +61,8 @@ class AttendanceCalculationPopup(private val context: Context) {
         upperButtons.add(FormulaItem("right_parenthesis", ")", ItemType.PARENTHESIS))
         upperButtons.add(FormulaItem("plus", "+", ItemType.OPERATOR))
         upperButtons.add(FormulaItem("minus", "-", ItemType.OPERATOR))
+        upperButtons.add(FormulaItem("multiply", "×", ItemType.OPERATOR))
+        upperButtons.add(FormulaItem("divide", "÷", ItemType.OPERATOR))
 
         // ボタンIDとFormulaItemのマッピング
         val buttonMap = mapOf(
@@ -69,7 +73,9 @@ class AttendanceCalculationPopup(private val context: Context) {
             R.id.btn_left_parenthesis to upperButtons[4],
             R.id.btn_right_parenthesis to upperButtons[5],
             R.id.btn_plus to upperButtons[6],
-            R.id.btn_minus to upperButtons[7]
+            R.id.btn_minus to upperButtons[7],
+            R.id.btn_multiply to upperButtons[8],
+            R.id.btn_divide to upperButtons[9]
         )
 
         for ((id, item) in buttonMap) {
@@ -114,7 +120,7 @@ class AttendanceCalculationPopup(private val context: Context) {
                     if (buttonItem.isSelected) {
                         // 選択済みの場合は無効化（背景は変更せずステートのみ変更）
                         button.isEnabled = false
-                        button.alpha = 0.1f // 透明度で無効状態を表現
+                        button.alpha = 0.5f // 透明度で無効状態を表現
                     } else {
                         // 通常状態に戻す
                         button.isEnabled = true
@@ -224,10 +230,16 @@ class AttendanceCalculationPopup(private val context: Context) {
     private fun updateCalculationPreview() {
         try {
             if (formulaItems.isEmpty()) {
-                calculationPreview.text = "数式を入力してください"
+                formulaPreview.text = "数式を入力してください"
+                calculationPreview.text = "---"
                 return
             }
 
+            // 数式文字列を作成
+            val displayFormula = buildDisplayFormulaString()
+            formulaPreview.text = displayFormula
+
+            // 計算結果を算出
             val result = calculateFormula()
             if (result != null) {
                 calculationPreview.text = formatTimeResult(result)
@@ -235,6 +247,7 @@ class AttendanceCalculationPopup(private val context: Context) {
                 calculationPreview.text = "N/A"
             }
         } catch (e: Exception) {
+            formulaPreview.text = "エラー"
             calculationPreview.text = "N/A"
         }
     }
@@ -266,6 +279,32 @@ class AttendanceCalculationPopup(private val context: Context) {
                 ItemType.START_TIME -> formula.append("9.0") // 仮の開始時間 9:00
                 ItemType.END_TIME -> formula.append("18.0") // 仮の終了時間 18:00
                 ItemType.BREAK_TIME -> formula.append("1.0") // 仮の休憩時間 1:00
+                ItemType.NUMBER -> formula.append(item.value)
+                ItemType.OPERATOR -> {
+                    when (item.value) {
+                        "×" -> formula.append(" * ")
+                        "÷" -> formula.append(" / ")
+                        else -> formula.append(" ${item.value} ")
+                    }
+                }
+                ItemType.PARENTHESIS -> formula.append(item.value)
+            }
+        }
+
+        return formula.toString()
+    }
+
+    /**
+     * 表示用の数式文字列を構築
+     */
+    private fun buildDisplayFormulaString(): String {
+        val formula = StringBuilder()
+
+        for (item in formulaItems) {
+            when (item.type) {
+                ItemType.START_TIME -> formula.append("開始(09:00)")
+                ItemType.END_TIME -> formula.append("終了(18:00)")
+                ItemType.BREAK_TIME -> formula.append("休憩(01:00)")
                 ItemType.NUMBER -> formula.append(item.value)
                 ItemType.OPERATOR -> formula.append(" ${item.value} ")
                 ItemType.PARENTHESIS -> formula.append(item.value)
@@ -318,7 +357,7 @@ class AttendanceCalculationPopup(private val context: Context) {
         try {
             if (expression.isEmpty()) return null
 
-            // 加減算のみサポート
+            // トークンに分割
             val tokens = mutableListOf<String>()
             var current = ""
             var i = 0
@@ -326,7 +365,7 @@ class AttendanceCalculationPopup(private val context: Context) {
             while (i < expression.length) {
                 val char = expression[i]
                 when {
-                    char == '+' || char == '-' -> {
+                    char == '+' || char == '-' || char == '*' || char == '/' -> {
                         if (current.isNotEmpty()) {
                             tokens.add(current)
                             current = ""
@@ -346,6 +385,34 @@ class AttendanceCalculationPopup(private val context: Context) {
 
             if (tokens.isEmpty()) return null
 
+            // 先に乗算と除算を処理
+            i = 1
+            while (i < tokens.size - 1) {
+                val operator = tokens[i]
+                if (operator == "*" || operator == "/") {
+                    val left = tokens[i - 1].toDoubleOrNull() ?: return null
+                    val right = tokens[i + 1].toDoubleOrNull() ?: return null
+
+                    val result = when (operator) {
+                        "*" -> left * right
+                        "/" -> {
+                            if (right == 0.0) return null // ゼロ除算エラー
+                            left / right
+                        }
+                        else -> return null
+                    }
+
+                    // 結果で置き換え
+                    tokens[i - 1] = result.toString()
+                    tokens.removeAt(i + 1)
+                    tokens.removeAt(i)
+                    i -= 1
+                } else {
+                    i += 2
+                }
+            }
+
+            // 次に加算と減算を処理
             var result = tokens[0].toDoubleOrNull() ?: return null
 
             i = 1

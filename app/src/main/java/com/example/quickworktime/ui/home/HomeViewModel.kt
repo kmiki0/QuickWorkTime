@@ -9,8 +9,12 @@ import androidx.lifecycle.viewModelScope
 import com.example.quickworktime.room.AppDatabase
 import com.example.quickworktime.room.WorkInfo
 import com.example.quickworktime.room.WorkInfoDao
+import com.example.quickworktime.room.WorkSetting
 import com.example.quickworktime.room.repository.WorkInfoRepository
+import com.example.quickworktime.room.repository.WorkSettingRepository
 import kotlinx.coroutines.launch
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -22,8 +26,10 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     // データベース
-    private val workInfoDao: WorkInfoDao = AppDatabase.getDatabase(application).workInfo()
+    private val db = AppDatabase.getDatabase(application)
+    private val workInfoDao: WorkInfoDao = db.workInfo()
     private val repo: WorkInfoRepository = WorkInfoRepository(workInfoDao)
+    private val settingRepo: WorkSettingRepository = WorkSettingRepository(db.workSetting())
 
     // 画面データ
     private val _displayData = MutableLiveData<WorkInfo?>()
@@ -121,13 +127,104 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
      *  ============================================ */
     fun getDisplayData(date: String?) {
         viewModelScope.launch {
-            // date が NULL の場合、最新のデータを取得
-            val data = repo.getWorkInfoByDate(date)
-            if (data == null) {
-                return@launch
-            } else {
-                _displayData.postValue(data)
+            try {
+                var searchDate = date
+                var data: WorkInfo? = null
+
+                if (searchDate.isNullOrEmpty()) {
+                    // 引数がnullまたは空の場合、最新のデータを取得
+                    val latestDate = repo.getLatestDate()
+                    if (latestDate.isNotEmpty()) {
+                        searchDate = latestDate
+                        data = repo.getWorkInfoByDate(searchDate)
+                    }
+                } else {
+                    // 指定された日付のデータを取得
+                    data = repo.getWorkInfoByDate(searchDate)
+                }
+
+                if (data != null) {
+                    // データが存在する場合
+                    _displayData.postValue(data)
+                } else {
+                    // データが存在しない場合、新規作成
+                    val newData = createDefaultWorkInfo(searchDate)
+                    if (newData != null) {
+                        _displayData.postValue(newData)
+                    }
+                }
+            } catch (e: Exception) {
+                // エラーの場合、今日の日付でデフォルトデータを作成
+                val todayDate = getCurrentDateString()
+                val defaultData = createDefaultWorkInfo(todayDate)
+                if (defaultData != null) {
+                    _displayData.postValue(defaultData)
+                }
             }
+        }
+    }
+
+    /**
+     * デフォルトのWorkInfoを作成（データベースには登録しない）
+     */
+    private suspend fun createDefaultWorkInfo(targetDate: String?): WorkInfo? {
+        return try {
+            // 使用する日付を決定
+            val useDate = if (targetDate.isNullOrEmpty()) {
+                getCurrentDateString()
+            } else {
+                targetDate
+            }
+
+            // デフォルトの設定値を取得または作成
+            var workSetting = settingRepo.getWorkSetting()
+            if (workSetting == null) {
+                // デフォルトの設定値を登録（WorkSettingのみ永続化）
+                val defaultSetting = WorkSetting(0, "09:00", "18:00", "01:00", "0111110")
+                settingRepo.insertWorkSetting(defaultSetting)
+                workSetting = defaultSetting
+            }
+
+            // 曜日を取得
+            val weekday = getWeekdayFromDate(useDate)
+
+            // 新しいWorkInfoを作成（データベースには登録しない）
+            val newWorkInfo = WorkInfo(
+                date = useDate,
+                startTime = workSetting.defaultStartTime,
+                endTime = workSetting.defaultEndTime,
+                workingTime = "",
+                breakTime = "",
+                isHoliday = false,
+                isNationalHoliday = false,
+                weekday = weekday
+            )
+
+            // データベースには登録せず、オブジェクトのみ返す
+            newWorkInfo
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    /**
+     * 現在の日付をyyyyMMdd形式で取得
+     */
+    private fun getCurrentDateString(): String {
+        val today = LocalDate.now()
+        return today.format(DateTimeFormatter.ofPattern("yyyyMMdd"))
+    }
+
+    /**
+     * 日付文字列から曜日を取得
+     */
+    private fun getWeekdayFromDate(dateString: String): String {
+        return try {
+            val formatter = DateTimeFormatter.ofPattern("yyyyMMdd")
+            val date = LocalDate.parse(dateString, formatter)
+            date.dayOfWeek.toString()
+        } catch (e: Exception) {
+            "MONDAY" // デフォルト値
         }
     }
 

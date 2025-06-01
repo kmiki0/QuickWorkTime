@@ -10,6 +10,6 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:inputType="numberDecimal"
-        android:hint="数値を入力してください" />
+        android:hint="1 = 60min と計算式に使用されます。" />
 
 </LinearLayout>

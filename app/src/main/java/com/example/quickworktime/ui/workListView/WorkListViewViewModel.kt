@@ -85,7 +85,7 @@ class WorkListViewViewModel(application: Application) : AndroidViewModel(applica
 
                 if (workSetting == null) {
                     // デフォルトの設定値を登録
-                    val defaultData = WorkSetting(0, "09:00", "18:00", "0111110")
+                    val defaultData = WorkSetting(0, "09:00", "18:00", "01:00", "0111110")
                     settingRepo.insertWorkSetting(defaultData)
                     workSetting = defaultData
                 }
