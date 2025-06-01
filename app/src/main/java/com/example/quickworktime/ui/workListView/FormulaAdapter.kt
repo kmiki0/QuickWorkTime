@@ -1,3 +1,4 @@
+
 package com.example.quickworktime.ui.workListView
 
 import android.animation.AnimatorSet
@@ -18,6 +19,7 @@ class FormulaAdapter(
     private var isDragging = false
     private var draggingViewHolder: RecyclerView.ViewHolder? = null
     private var shakeAnimator: AnimatorSet? = null
+    private var hasMoved = false // ドラッグ中に実際に移動したかのフラグ
 
     inner class FormulaViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val textView: TextView = itemView.findViewById(R.id.formulaItemText)
@@ -25,6 +27,7 @@ class FormulaAdapter(
         init {
             itemView.setOnClickListener {
                 val position = adapterPosition
+                // ドラッグ中でない場合のみクリック削除を許可
                 if (position != RecyclerView.NO_POSITION && !isDragging) {
                     onItemRemove(position)
                 }
@@ -50,6 +53,7 @@ class FormulaAdapter(
      */
     fun startDragAnimation(viewHolder: RecyclerView.ViewHolder) {
         isDragging = true
+        hasMoved = false // 移動フラグをリセット
         draggingViewHolder = viewHolder
         startShakeAnimation(viewHolder.itemView)
     }
@@ -58,11 +62,23 @@ class FormulaAdapter(
      * ドラッグ終了時に呼び出す
      */
     fun stopDragAnimation() {
-        isDragging = false
         draggingViewHolder?.let { holder ->
             stopShakeAnimation(holder.itemView)
         }
         draggingViewHolder = null
+
+        // 少し遅延してからドラッグ状態を解除（誤クリック防止）
+        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+            isDragging = false
+            hasMoved = false
+        }, 100) // 100ms遅延
+    }
+
+    /**
+     * アイテムが移動したことを記録
+     */
+    fun onItemMoved() {
+        hasMoved = true
     }
 
     /**

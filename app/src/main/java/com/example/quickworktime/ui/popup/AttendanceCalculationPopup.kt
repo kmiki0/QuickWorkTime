@@ -1,11 +1,13 @@
 package com.example.quickworktime.ui.popup
 
 import android.app.AlertDialog
+import android.app.TimePickerDialog
 import android.content.Context
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.Button
 import android.widget.EditText
+import android.widget.TextView
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -13,6 +15,7 @@ import com.example.quickworktime.R
 import com.example.quickworktime.ui.workListView.FormulaAdapter
 import com.example.quickworktime.ui.workListView.FormulaItem
 import com.example.quickworktime.ui.workListView.ItemType
+import java.util.Calendar
 import java.util.UUID
 
 class AttendanceCalculationPopup(private val context: Context) {
@@ -21,6 +24,7 @@ class AttendanceCalculationPopup(private val context: Context) {
     private val formulaItems = mutableListOf<FormulaItem>()
     private lateinit var formulaAdapter: FormulaAdapter
     private lateinit var alertDialog: AlertDialog
+    private lateinit var calculationPreview: TextView
 
     fun show() {
         val dialogView = LayoutInflater.from(context).inflate(R.layout.fragment_work_list_view, null)
@@ -30,6 +34,9 @@ class AttendanceCalculationPopup(private val context: Context) {
         alertDialog = dialogBuilder.create()
         alertDialog.show()
 
+        // プレビューTextViewを取得
+        calculationPreview = dialogView.findViewById(R.id.calculation_preview)
+
         setupUpperButtons(dialogView)
         setupFormulaRecyclerView(dialogView)
 
@@ -37,6 +44,9 @@ class AttendanceCalculationPopup(private val context: Context) {
             alertDialog.dismiss()
             // TODO: 勤怠計算結果の反映処理をここに追加
         }
+
+        // 初期計算結果を表示
+        updateCalculationPreview()
     }
 
     private fun setupUpperButtons(dialogView: View) {
@@ -87,6 +97,7 @@ class AttendanceCalculationPopup(private val context: Context) {
         formulaItems.add(newItem)
         formulaAdapter.notifyItemInserted(formulaItems.size - 1)
         updateButtonStates(alertDialog.window!!.decorView)
+        updateCalculationPreview() // 計算結果を更新
     }
 
     private fun updateButtonStates(rootView: View) {
@@ -101,11 +112,13 @@ class AttendanceCalculationPopup(private val context: Context) {
                 if (buttonId != 0) {
                     val button = rootView.findViewById<Button>(buttonId)
                     if (buttonItem.isSelected) {
-                        button.setBackgroundColor(context.getColor(R.color.button_disabled))
+                        // 選択済みの場合は無効化（背景は変更せずステートのみ変更）
                         button.isEnabled = false
+                        button.alpha = 0.1f // 透明度で無効状態を表現
                     } else {
-                        button.setBackgroundColor(context.getColor(R.color.button_normal))
+                        // 通常状態に戻す
                         button.isEnabled = true
+                        button.alpha = 1.0f // 透明度を元に戻す
                     }
                 }
             }
@@ -121,6 +134,7 @@ class AttendanceCalculationPopup(private val context: Context) {
                 updateButtonStates(alertDialog.window!!.decorView)
             }
             formulaAdapter.notifyItemRemoved(position)
+            updateCalculationPreview() // 計算結果を更新
         }
         recyclerView.adapter = formulaAdapter
         recyclerView.layoutManager = LinearLayoutManager(context, LinearLayoutManager.HORIZONTAL, false)
@@ -136,9 +150,13 @@ class AttendanceCalculationPopup(private val context: Context) {
                 val fromPos = viewHolder.adapterPosition
                 val toPos = target.adapterPosition
 
+                // 実際に移動が発生したことを記録
+                formulaAdapter.onItemMoved()
+
                 // 元のコードと全く同じ処理
                 formulaItems.add(toPos, formulaItems.removeAt(fromPos))
                 formulaAdapter.notifyItemMoved(fromPos, toPos)
+                updateCalculationPreview() // 計算結果を更新
                 return true
             }
 
@@ -161,6 +179,12 @@ class AttendanceCalculationPopup(private val context: Context) {
                         formulaAdapter.stopDragAnimation()
                     }
                 }
+            }
+
+            override fun clearView(recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder) {
+                super.clearView(recyclerView, viewHolder)
+                // ドラッグが完全に終了した時点でアニメーションを停止
+                formulaAdapter.stopDragAnimation()
             }
 
             override fun isLongPressDragEnabled(): Boolean {
@@ -187,9 +211,173 @@ class AttendanceCalculationPopup(private val context: Context) {
                     )
                     formulaItems.add(newItem)
                     formulaAdapter.notifyItemInserted(formulaItems.size - 1)
+                    updateCalculationPreview() // 計算結果を更新
                 }
             }
             .setNegativeButton("キャンセル", null)
             .show()
+    }
+
+    /**
+     * 計算結果のプレビューを更新
+     */
+    private fun updateCalculationPreview() {
+        try {
+            if (formulaItems.isEmpty()) {
+                calculationPreview.text = "数式を入力してください"
+                return
+            }
+
+            val result = calculateFormula()
+            if (result != null) {
+                calculationPreview.text = formatTimeResult(result)
+            } else {
+                calculationPreview.text = "N/A"
+            }
+        } catch (e: Exception) {
+            calculationPreview.text = "N/A"
+        }
+    }
+
+    /**
+     * 数式を計算
+     */
+    private fun calculateFormula(): Double? {
+        try {
+            // FormulaItemsを数式文字列に変換
+            val formulaString = buildFormulaString()
+            if (formulaString.isEmpty()) return null
+
+            // 簡単な数式評価器で計算
+            return evaluateFormula(formulaString)
+        } catch (e: Exception) {
+            return null
+        }
+    }
+
+    /**
+     * FormulaItemsから数式文字列を構築
+     */
+    private fun buildFormulaString(): String {
+        val formula = StringBuilder()
+
+        for (item in formulaItems) {
+            when (item.type) {
+                ItemType.START_TIME -> formula.append("9.0") // 仮の開始時間 9:00
+                ItemType.END_TIME -> formula.append("18.0") // 仮の終了時間 18:00
+                ItemType.BREAK_TIME -> formula.append("1.0") // 仮の休憩時間 1:00
+                ItemType.NUMBER -> formula.append(item.value)
+                ItemType.OPERATOR -> formula.append(" ${item.value} ")
+                ItemType.PARENTHESIS -> formula.append(item.value)
+            }
+        }
+
+        return formula.toString()
+    }
+
+    /**
+     * 簡単な数式評価器
+     */
+    private fun evaluateFormula(formula: String): Double? {
+        try {
+            // 空白を除去
+            val cleanFormula = formula.replace(" ", "")
+
+            // 基本的な計算のみサポート（括弧、加減算）
+            return evaluateExpression(cleanFormula)
+        } catch (e: Exception) {
+            return null
+        }
+    }
+
+    /**
+     * 数式を評価（再帰的に括弧を処理）
+     */
+    private fun evaluateExpression(expression: String): Double? {
+        var expr = expression
+
+        // 括弧を再帰的に処理
+        while (expr.contains('(')) {
+            val lastOpenParen = expr.lastIndexOf('(')
+            val closeParen = expr.indexOf(')', lastOpenParen)
+            if (closeParen == -1) return null // 括弧が閉じられていない
+
+            val innerExpr = expr.substring(lastOpenParen + 1, closeParen)
+            val innerResult = evaluateSimpleExpression(innerExpr) ?: return null
+
+            expr = expr.substring(0, lastOpenParen) + innerResult + expr.substring(closeParen + 1)
+        }
+
+        return evaluateSimpleExpression(expr)
+    }
+
+    /**
+     * 括弧のない単純な数式を評価
+     */
+    private fun evaluateSimpleExpression(expression: String): Double? {
+        try {
+            if (expression.isEmpty()) return null
+
+            // 加減算のみサポート
+            val tokens = mutableListOf<String>()
+            var current = ""
+            var i = 0
+
+            while (i < expression.length) {
+                val char = expression[i]
+                when {
+                    char == '+' || char == '-' -> {
+                        if (current.isNotEmpty()) {
+                            tokens.add(current)
+                            current = ""
+                        }
+                        tokens.add(char.toString())
+                    }
+                    char.isDigit() || char == '.' -> {
+                        current += char
+                    }
+                }
+                i++
+            }
+
+            if (current.isNotEmpty()) {
+                tokens.add(current)
+            }
+
+            if (tokens.isEmpty()) return null
+
+            var result = tokens[0].toDoubleOrNull() ?: return null
+
+            i = 1
+            while (i < tokens.size - 1) {
+                val operator = tokens[i]
+                val operand = tokens[i + 1].toDoubleOrNull() ?: return null
+
+                when (operator) {
+                    "+" -> result += operand
+                    "-" -> result -= operand
+                    else -> return null
+                }
+                i += 2
+            }
+
+            return result
+        } catch (e: Exception) {
+            return null
+        }
+    }
+
+    /**
+     * 時間結果をフォーマット
+     */
+    private fun formatTimeResult(hours: Double): String {
+        return if (hours < 0) {
+            "N/A"
+        } else {
+            val totalMinutes = (hours * 60).toInt()
+            val h = totalMinutes / 60
+            val m = totalMinutes % 60
+            "${h}:${m.toString().padStart(2, '0')}"
+        }
     }
 }
