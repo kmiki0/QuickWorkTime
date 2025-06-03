@@ -306,11 +306,12 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:tint="@color/white" />
 
+        <!-- サブFAB1: 新規追加（左に展開） -->
         <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/fab_add_item"
+            android:id="@+id/fab_new_day"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:src="@drawable/ic_dashboard_black_24dp"
+            android:src="@drawable/ic_calender_add_white_24dp"
             android:visibility="gone"
             app:backgroundTint="#4CAF50"
             app:fabSize="mini"
@@ -325,7 +326,7 @@
             android:id="@+id/fab_add_alarm"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:src="@drawable/ic_notifications_black_24dp"
+            android:src="@drawable/ic_calendar_white_24dp"
             android:visibility="gone"
             app:backgroundTint="#4CAF50"
             app:fabSize="mini"
@@ -340,7 +341,7 @@
             android:id="@+id/fab_add_person"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:src="@drawable/ic_home_black_24dp"
+            android:src="@drawable/ic_setting_white_24dp"
             android:visibility="gone"
             app:backgroundTint="#4CAF50"
             app:fabSize="mini"
@@ -350,16 +351,16 @@
             app:layout_constraintStart_toStartOf="@+id/fab_main"
             app:layout_constraintTop_toTopOf="@+id/fab_main" />
 
-        <!-- ラベル1: Add Item -->
+        <!-- ラベル1: 新規追加 -->
         <TextView
-            android:id="@+id/label_add_item"
+            android:id="@+id/label_new_day"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:background="@drawable/fab_label_background"
             android:fontFamily="@font/jersey10_regular"
             android:paddingHorizontal="12dp"
             android:paddingVertical="6dp"
-            android:text="Add Item"
+            android:text="新規追加"
             android:textColor="@color/white"
             android:textSize="14sp"
             android:visibility="gone"
@@ -377,7 +378,7 @@
             android:fontFamily="@font/jersey10_regular"
             android:paddingHorizontal="12dp"
             android:paddingVertical="6dp"
-            android:text="Add Alarm"
+            android:text="一覧画面"
             android:textColor="@color/white"
             android:textSize="14sp"
             android:visibility="gone"
@@ -386,7 +387,7 @@
             app:layout_constraintStart_toStartOf="@+id/fab_main"
             app:layout_constraintTop_toTopOf="@+id/fab_main" />
 
-        <!-- ラベル3: Add Person -->
+        <!-- ラベル3: 設定 -->
         <TextView
             android:id="@+id/label_add_person"
             android:layout_width="wrap_content"

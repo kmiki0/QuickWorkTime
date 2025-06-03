@@ -5,6 +5,8 @@ import android.animation.AnimatorListenerAdapter
 import android.animation.ObjectAnimator
 import android.animation.AnimatorSet
 import android.annotation.SuppressLint
+import android.app.DatePickerDialog
+import java.util.Calendar
 import android.transition.ChangeBounds
 import android.transition.TransitionManager
 import androidx.constraintlayout.widget.ConstraintSet
@@ -108,8 +110,8 @@ class HomeFragment : Fragment() {
             closeFabMenu()
         }
 
-        binding.fabAddItem.setOnClickListener {
-            handleFabClick("Item")
+        binding.fabNewDay.setOnClickListener {
+            handleFabClick("New")
             closeFabMenu()
         }
 
@@ -124,8 +126,8 @@ class HomeFragment : Fragment() {
             closeFabMenu()
         }
 
-        binding.labelAddItem.setOnClickListener {
-            handleFabClick("Item")
+        binding.labelNewDay.setOnClickListener {
+            handleFabClick("New")
             closeFabMenu()
         }
     }
@@ -146,8 +148,8 @@ class HomeFragment : Fragment() {
         val fabConfigs = listOf(
             // 左 (180度)
             createFabConfig(
-                fab = binding.fabAddItem,
-                label = binding.labelAddItem,
+                fab = binding.fabNewDay,
+                label = binding.labelNewDay,
                 angle = 180f,
                 distance = FAB_DISTANCE
             ),
@@ -276,7 +278,7 @@ class HomeFragment : Fragment() {
         mainFabRotation.duration = 300
 
         val fabData = listOf(
-            Triple(binding.fabAddItem, binding.labelAddItem, Pair(-80f, 0f)),
+            Triple(binding.fabNewDay, binding.labelNewDay, Pair(-80f, 0f)),
             Triple(binding.fabAddAlarm, binding.labelAddAlarm, Pair(-56.6f, -56.6f)),
             Triple(binding.fabAddPerson, binding.labelAddPerson, Pair(0f, -80f))
         )
@@ -345,11 +347,52 @@ class HomeFragment : Fragment() {
                 Toast.makeText(requireContext(), "Add Alarm clicked", Toast.LENGTH_SHORT).show()
                 // ここに実際の処理を追加
             }
-            "Item" -> {
-                Toast.makeText(requireContext(), "Add Item clicked", Toast.LENGTH_SHORT).show()
-                // ここに実際の処理を追加
+            "New" -> {
+                // カレンダーピッカーを表示してデータを新規作成または表示
+                showDatePickerForNewData()
             }
         }
+    }
+
+    /**
+     * 新しいデータ作成のためのカレンダーピッカーを表示
+     */
+    private fun showDatePickerForNewData() {
+        val calendar = Calendar.getInstance()
+        val year = calendar.get(Calendar.YEAR)
+        val month = calendar.get(Calendar.MONTH)
+        val day = calendar.get(Calendar.DAY_OF_MONTH)
+
+        val datePickerDialog = DatePickerDialog(
+            requireContext(),
+            { _, selectedYear, selectedMonth, selectedDay ->
+                val formattedDate = String.format("%04d%02d%02d", selectedYear, selectedMonth + 1, selectedDay)
+
+                // ViewModelでデータの存在確認と表示データ設定
+                vm.checkAndDisplayData(formattedDate).observe(viewLifecycleOwner) { isExist ->
+                    if (isExist) {
+                        // すでにデータが存在する場合
+                        Toast.makeText(
+                            requireContext(),
+                            "${formattedDate.substring(0, 4)}/${formattedDate.substring(4, 6)}/${formattedDate.substring(6, 8)} のデータを表示します",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    } else {
+                        // 新規作成場合
+                        Toast.makeText(
+                            requireContext(),
+                            "${formattedDate.substring(0, 4)}/${formattedDate.substring(4, 6)}/${formattedDate.substring(6, 8)} を新規作成しました",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
+            },
+            year,
+            month,
+            day
+        )
+
+        datePickerDialog.show()
     }
 
     /**

@@ -208,6 +208,44 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     /**
+     * 指定日付のデータ存在確認と表示データ設定
+     * @param date String 検索対象の日付（yyyyMMdd形式）
+     * @return LiveData<Boolean> データが既に存在する場合true、新規作成の場合false
+     */
+    fun checkAndDisplayData(date: String): LiveData<Boolean> {
+        val result = MutableLiveData<Boolean>()
+
+        viewModelScope.launch {
+            try {
+                // 指定された日付のデータを取得
+                val existingData = repo.getWorkInfoByDate(date)
+
+                if (existingData != null) {
+                    // データが既に存在する場合
+                    _displayData.postValue(existingData)
+                    result.postValue(true)
+                } else {
+                    // データが存在しない場合、デフォルトデータを作成（データベースには保存しない）
+                    val defaultData = createDefaultWorkInfo(date)
+                    if (defaultData != null) {
+                        _displayData.postValue(defaultData)
+                    }
+                    result.postValue(false)
+                }
+            } catch (e: Exception) {
+                // エラーの場合は今日の日付でデフォルトデータを作成
+                val todayDate = getCurrentDateString()
+                val defaultData = createDefaultWorkInfo(todayDate)
+                if (defaultData != null) {
+                    _displayData.postValue(defaultData)
+                }
+                result.postValue(false)
+            }
+        }
+        return result
+    }
+
+    /**
      * 現在の日付をyyyyMMdd形式で取得
      */
     private fun getCurrentDateString(): String {
