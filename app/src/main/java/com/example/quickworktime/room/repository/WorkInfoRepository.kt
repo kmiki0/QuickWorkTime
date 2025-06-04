@@ -14,23 +14,23 @@ class WorkInfoRepository(private val dao: WorkInfoDao) {
 	 *  データ 1件を登録
 	 *  @param workInfo WorkInfo
 	 *  ============================================ */
-	 suspend fun insertWorkInfo(workInfo: WorkInfo) {
-			try {
-				// 作業情報を登録
-				val insertData = WorkInfo(
-					workInfo.date, 			  // 日付
-					workInfo.startTime, 	  // 開始時間
-					workInfo.endTime, 		  // 終了時間
-					calcWorkTime(workInfo),   // 作業時間
-					calcBreakTime(workInfo),  // 休憩時間
-					false,		  // 休日フラグ
-					false,  // 祝日フラグ
-					getWeekday(workInfo.date) // 曜日(英語)
-				)
-				dao.insertWorkInfo(insertData)
-			} catch (e: Exception) {
-				Log.d("DebugLog", "Error: ${e.message}")
-			}
+	suspend fun insertWorkInfo(workInfo: WorkInfo) {
+		try {
+			// 作業情報を登録
+			val insertData = WorkInfo(
+				workInfo.date, 			  // 日付
+				workInfo.startTime, 	  // 開始時間
+				workInfo.endTime, 		  // 終了時間
+				calcWorkTime(workInfo),   // 作業時間
+				calcBreakTime(workInfo),  // 休憩時間
+				false,		  // 休日フラグ
+				false,  // 祝日フラグ
+				getWeekday(workInfo.date) // 曜日(英語)
+			)
+			dao.insertWorkInfo(insertData)
+		} catch (e: Exception) {
+			Log.d("DebugLog", "Error: ${e.message}")
+		}
 	}
 
 	/** ============================================
@@ -50,14 +50,14 @@ class WorkInfoRepository(private val dao: WorkInfoDao) {
 	 *  データの最大値を取得
 	 *  @return LiveData<String>
 	 *  ============================================ */
-	  suspend fun getLatestDate(): String {
-		  return try {
-				dao.getLatestDate()
-			} catch (e: Exception) {
-				Log.d("DebugLog", "Error: ${e.message}")
-				""
-			}
-	 }
+	suspend fun getLatestDate(): String {
+		return try {
+			dao.getLatestDate()
+		} catch (e: Exception) {
+			Log.d("DebugLog", "Error: ${e.message}")
+			""
+		}
+	}
 
 	/** ============================================
 	 *  PKに沿ったデータを取得 (引数がNULLの場合、最新のデータを取得)
@@ -137,4 +137,3 @@ class WorkInfoRepository(private val dao: WorkInfoDao) {
 		return formatdate.dayOfWeek.toString()
 	}
 }
-

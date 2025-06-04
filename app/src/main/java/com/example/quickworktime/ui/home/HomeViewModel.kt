@@ -12,6 +12,7 @@ import com.example.quickworktime.room.WorkInfoDao
 import com.example.quickworktime.room.WorkSetting
 import com.example.quickworktime.room.repository.WorkInfoRepository
 import com.example.quickworktime.room.repository.WorkSettingRepository
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -111,14 +112,6 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         setEndHour(workInfo.endTime.split(":")[0])
         setEndMinute(workInfo.endTime.split(":")[1])
     }
-
-
-    // 初期化
-    init {
-        // 初期表示
-        getDisplayData("")
-    }
-
 
     /** ============================================
      *  PKに沿ったデータを取得（引数がNULL）
