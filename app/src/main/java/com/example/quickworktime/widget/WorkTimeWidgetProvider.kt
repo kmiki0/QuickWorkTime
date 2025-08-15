@@ -33,6 +33,7 @@ class WorkTimeWidgetProvider : AppWidgetProvider() {
     companion object {
         const val ACTION_CLOCK_OUT = "com.example.quickworktime.widget.ACTION_CLOCK_OUT"
         const val ACTION_ADJUST_TIME = "com.example.quickworktime.widget.ACTION_ADJUST_TIME"
+        const val ACTION_RETRY_UPDATE = "com.example.quickworktime.widget.ACTION_RETRY_UPDATE"
         const val EXTRA_TIME_COMPONENT = "time_component"
         const val EXTRA_DIRECTION = "direction"
     }
@@ -59,6 +60,10 @@ class WorkTimeWidgetProvider : AppWidgetProvider() {
             ACTION_ADJUST_TIME -> {
                 // Handle time adjustment action
                 handleTimeAdjustment(context, intent)
+            }
+            ACTION_RETRY_UPDATE -> {
+                // Handle retry update action
+                handleRetryUpdate(context)
             }
             Intent.ACTION_CONFIGURATION_CHANGED -> {
                 // Handle theme/configuration changes
@@ -88,27 +93,25 @@ class WorkTimeWidgetProvider : AppWidgetProvider() {
         // Construct the RemoteViews object with appropriate layout
         val views = RemoteViews(context.packageName, layoutId)
         
-        // Set up click listeners
-        setupClickListeners(context, views, appWidgetId)
-        
-        // Update widget display asynchronously
+        // Update widget display asynchronously with comprehensive error handling
         CoroutineScope(Dispatchers.Main).launch {
-            try {
-                val widgetState = getWidgetDisplayState(context)
-                updateWidgetDisplay(views, widgetState)
-                
-                // Instruct the widget manager to update the widget
-                appWidgetManager.updateAppWidget(appWidgetId, views)
-            } catch (e: Exception) {
-                // Fallback to default display if data loading fails
-                val fallbackState = WidgetDisplayState(
-                    displayTime = "--:--",
-                    dateText = "エラー",
-                    hasRecord = false
-                )
-                updateWidgetDisplay(views, fallbackState)
-                appWidgetManager.updateAppWidget(appWidgetId, views)
+            val widgetState = getWidgetDisplayState(context)
+            
+            // Check if this is an error state to set up appropriate click listeners
+            val isErrorState = widgetState.displayTime == "--:--" && 
+                              (widgetState.dateText.contains("エラー") || widgetState.dateText.contains("DB") || 
+                               widgetState.dateText.contains("接続") || widgetState.dateText.contains("更新"))
+            
+            if (isErrorState) {
+                setupErrorStateClickListeners(context, views, appWidgetId)
+            } else {
+                setupClickListeners(context, views, appWidgetId)
             }
+            
+            updateWidgetDisplay(views, widgetState)
+            
+            // Instruct the widget manager to update the widget
+            appWidgetManager.updateAppWidget(appWidgetId, views)
         }
     }
     
@@ -121,7 +124,7 @@ class WorkTimeWidgetProvider : AppWidgetProvider() {
         )
         views.setOnClickPendingIntent(R.id.widget_time_display, appPendingIntent)
         
-        // Set up click listener for clock out button
+        // Set up click listener for clock out button (will be dynamically changed for error states)
         val clockOutIntent = Intent(context, WorkTimeWidgetProvider::class.java).apply {
             action = ACTION_CLOCK_OUT
         }
@@ -133,38 +136,53 @@ class WorkTimeWidgetProvider : AppWidgetProvider() {
     }
     
     /**
-     * Gets the current widget display state based on today's work data
+     * Sets up click listeners for error state (retry functionality)
+     */
+    private fun setupErrorStateClickListeners(context: Context, views: RemoteViews, appWidgetId: Int) {
+        // Keep the app launch listener
+        val appIntent = Intent(context, MainActivity::class.java)
+        val appPendingIntent = PendingIntent.getActivity(
+            context, 0, appIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        views.setOnClickPendingIntent(R.id.widget_time_display, appPendingIntent)
+        
+        // Set up retry click listener for the button
+        val retryIntent = Intent(context, WorkTimeWidgetProvider::class.java).apply {
+            action = ACTION_RETRY_UPDATE
+        }
+        val retryPendingIntent = PendingIntent.getBroadcast(
+            context, 1, retryIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        views.setOnClickPendingIntent(R.id.widget_clock_out_button, retryPendingIntent)
+    }
+    
+    /**
+     * Gets the current widget display state with error handling
      */
     private suspend fun getWidgetDisplayState(context: Context): WidgetDisplayState {
         val repository = WidgetRepository.create(context)
-        val todayWorkInfo = repository.getTodayWorkInfo()
-        val dateFormatter = DateTimeFormatter.ofPattern("M/d")
-        val todayText = LocalDate.now().format(dateFormatter)
         
-        return if (todayWorkInfo?.endTime != null) {
-            // Has record state - show recorded end time
-            WidgetDisplayState(
-                displayTime = todayWorkInfo.endTime,
-                dateText = todayText,
-                hasRecord = true,
-                buttonText = "記録済み"
-            )
-        } else {
-            // No record state - show calculated optimal time
-            val optimalTime = repository.calculateOptimalClockOutTime()
-            WidgetDisplayState(
-                displayTime = optimalTime,
-                dateText = todayText,
-                hasRecord = false,
-                buttonText = "Exit"
-            )
+        return when (val result = repository.getWidgetDisplayState(context)) {
+            is WidgetErrorHandler.WidgetResult.Success -> result.data
+            is WidgetErrorHandler.WidgetResult.Error -> {
+                // Create error state for display
+                val errorHandler = WidgetErrorHandler()
+                errorHandler.createErrorWidgetState(result.error)
+            }
         }
     }
     
     /**
-     * Updates the widget display using RemoteViews
+     * Updates the widget display using RemoteViews with enhanced error state handling
      */
     private fun updateWidgetDisplay(views: RemoteViews, state: WidgetDisplayState) {
+        // Check if this is an error state
+        val isErrorState = state.displayTime == "--:--" && 
+                          (state.dateText.contains("エラー") || state.dateText.contains("DB") || 
+                           state.dateText.contains("接続") || state.dateText.contains("更新"))
+        
         // Split time into hour and minute components
         val timeParts = state.displayTime.split(":")
         val hour = if (timeParts.size >= 2) timeParts[0] else "--"
@@ -177,27 +195,43 @@ class WorkTimeWidgetProvider : AppWidgetProvider() {
         // Update date display
         views.setTextViewText(R.id.widget_date_text, state.dateText)
         
-        // Update status text
-        val statusText = if (state.hasRecord) "記録済み" else "退勤予定"
+        // Update status text based on state
+        val statusText = when {
+            isErrorState -> "データ取得失敗"
+            state.hasRecord -> "記録済み"
+            else -> "退勤予定"
+        }
         views.setTextViewText(R.id.widget_status_text, statusText)
         
         // Update button text and state
         views.setTextViewText(R.id.widget_clock_out_button, state.buttonText)
         
-        // Disable button if already recorded
-        if (state.hasRecord) {
-            views.setInt(R.id.widget_clock_out_button, "setAlpha", 128) // Make button semi-transparent
-            views.setBoolean(R.id.widget_clock_out_button, "setEnabled", false)
-        } else {
-            views.setInt(R.id.widget_clock_out_button, "setAlpha", 255) // Make button fully opaque
-            views.setBoolean(R.id.widget_clock_out_button, "setEnabled", true)
+        // Handle button state based on error or record status
+        when {
+            isErrorState -> {
+                // Error state - enable retry button
+                views.setInt(R.id.widget_clock_out_button, "setAlpha", 255)
+                views.setBoolean(R.id.widget_clock_out_button, "setEnabled", true)
+                // Change button action to retry for error states
+                // This would require additional intent handling for retry functionality
+            }
+            state.hasRecord -> {
+                // Already recorded - disable button
+                views.setInt(R.id.widget_clock_out_button, "setAlpha", 128)
+                views.setBoolean(R.id.widget_clock_out_button, "setEnabled", false)
+            }
+            else -> {
+                // Normal state - enable button
+                views.setInt(R.id.widget_clock_out_button, "setAlpha", 255)
+                views.setBoolean(R.id.widget_clock_out_button, "setEnabled", true)
+            }
         }
         
         // Set content description for accessibility
-        val contentDescription = if (state.hasRecord) {
-            "退勤時刻: ${state.displayTime} (記録済み)"
-        } else {
-            "退勤予定時刻: ${state.displayTime}"
+        val contentDescription = when {
+            isErrorState -> "エラー状態: ${state.dateText}. 再試行するにはボタンをタップしてください"
+            state.hasRecord -> "退勤時刻: ${state.displayTime} (記録済み)"
+            else -> "退勤予定時刻: ${state.displayTime}"
         }
         views.setContentDescription(R.id.widget_time_display, contentDescription)
     }
@@ -217,19 +251,44 @@ class WorkTimeWidgetProvider : AppWidgetProvider() {
         onUpdate(context, appWidgetManager, appWidgetIds)
     }
     
-    private fun handleConfigurationChanged(context: Context) {
-        // Handle theme changes by updating all widget instances
+    private fun handleRetryUpdate(context: Context) {
+        // Handle retry update by forcing a widget refresh
         CoroutineScope(Dispatchers.Main).launch {
-            try {
-                val repository = WidgetRepository.create(context)
-                repository.updateWidgetTheme(context)
-            } catch (e: Exception) {
-                // Fallback to standard update if theme update fails
-                val appWidgetManager = AppWidgetManager.getInstance(context)
-                val appWidgetIds = appWidgetManager.getAppWidgetIds(
-                    android.content.ComponentName(context, WorkTimeWidgetProvider::class.java)
-                )
-                onUpdate(context, appWidgetManager, appWidgetIds)
+            val repository = WidgetRepository.create(context)
+            // Clear any cached state to force fresh data retrieval
+            val stateCache = WidgetStateCache(context)
+            stateCache.clearCache()
+            
+            // Force widget update
+            when (val result = repository.updateWidget(context)) {
+                is WidgetErrorHandler.WidgetResult.Success -> {
+                    // Retry successful
+                }
+                is WidgetErrorHandler.WidgetResult.Error -> {
+                    // Retry failed, but widget will show error state
+                    val errorHandler = WidgetErrorHandler()
+                    errorHandler.logError(context, result.error, "retryUpdate")
+                }
+            }
+        }
+    }
+    
+    private fun handleConfigurationChanged(context: Context) {
+        // Handle theme changes by updating all widget instances with error handling
+        CoroutineScope(Dispatchers.Main).launch {
+            val repository = WidgetRepository.create(context)
+            when (val result = repository.updateWidgetTheme(context)) {
+                is WidgetErrorHandler.WidgetResult.Success -> {
+                    // Theme update successful
+                }
+                is WidgetErrorHandler.WidgetResult.Error -> {
+                    // Fallback to standard update if theme update fails
+                    val appWidgetManager = AppWidgetManager.getInstance(context)
+                    val appWidgetIds = appWidgetManager.getAppWidgetIds(
+                        android.content.ComponentName(context, WorkTimeWidgetProvider::class.java)
+                    )
+                    onUpdate(context, appWidgetManager, appWidgetIds)
+                }
             }
         }
     }

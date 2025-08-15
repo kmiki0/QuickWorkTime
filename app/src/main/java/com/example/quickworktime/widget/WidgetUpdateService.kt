@@ -68,17 +68,25 @@ class WidgetUpdateService : Service() {
     }
     
     /**
-     * Handles clock-out recording in background thread
+     * Handles clock-out recording in background thread with comprehensive error handling
      */
     private fun handleClockOutRecording(intent: Intent, startId: Int) {
         serviceScope.launch {
+            val repository = WidgetRepository.create(this@WidgetUpdateService)
+            val errorHandler = WidgetErrorHandler()
+            
             try {
-                val repository = WidgetRepository.create(this@WidgetUpdateService)
-                
                 // Check if today already has a record
                 if (repository.hasTodayRecord()) {
                     // Already recorded, just update widget to show current state
-                    repository.updateWidget(this@WidgetUpdateService)
+                    when (val updateResult = repository.updateWidget(this@WidgetUpdateService)) {
+                        is WidgetErrorHandler.WidgetResult.Error -> {
+                            errorHandler.logError(this@WidgetUpdateService, updateResult.error, "updateWidget after duplicate record check")
+                        }
+                        is WidgetErrorHandler.WidgetResult.Success -> {
+                            // Update successful
+                        }
+                    }
                     stopSelf(startId)
                     return@launch
                 }
@@ -87,24 +95,44 @@ class WidgetUpdateService : Service() {
                 val clockOutTime = intent.getStringExtra(EXTRA_CLOCK_OUT_TIME) 
                     ?: repository.calculateOptimalClockOutTime()
                 
-                // Record the clock-out time
-                repository.recordClockOut(clockOutTime)
-                
-                // Notify that data has been updated
-                repository.notifyDataUpdated(this@WidgetUpdateService)
-                
-                // Update all widget instances to reflect the new state
-                repository.updateWidget(this@WidgetUpdateService)
+                // Record the clock-out time with error handling
+                when (val recordResult = repository.recordClockOut(clockOutTime)) {
+                    is WidgetErrorHandler.WidgetResult.Success -> {
+                        // Recording successful, notify and update widgets
+                        repository.notifyDataUpdated(this@WidgetUpdateService)
+                        
+                        when (val updateResult = repository.updateWidget(this@WidgetUpdateService)) {
+                            is WidgetErrorHandler.WidgetResult.Error -> {
+                                errorHandler.logError(this@WidgetUpdateService, updateResult.error, "updateWidget after successful record")
+                            }
+                            is WidgetErrorHandler.WidgetResult.Success -> {
+                                // Update successful
+                            }
+                        }
+                    }
+                    is WidgetErrorHandler.WidgetResult.Error -> {
+                        // Recording failed, log error and still try to update widgets
+                        errorHandler.logError(this@WidgetUpdateService, recordResult.error, "recordClockOut")
+                        
+                        // Try to update widgets to show current state (might show error state)
+                        when (val updateResult = repository.updateWidget(this@WidgetUpdateService)) {
+                            is WidgetErrorHandler.WidgetResult.Error -> {
+                                errorHandler.logError(this@WidgetUpdateService, updateResult.error, "updateWidget after failed record")
+                            }
+                            is WidgetErrorHandler.WidgetResult.Success -> {
+                                // Update successful
+                            }
+                        }
+                    }
+                }
                 
             } catch (e: Exception) {
-                // If recording fails, still try to update widgets to show current state
-                try {
-                    val repository = WidgetRepository.create(this@WidgetUpdateService)
-                    repository.updateWidget(this@WidgetUpdateService)
-                } catch (updateException: Exception) {
-                    // Log error but don't crash the service
-                    // In production, you might want to use proper logging
-                }
+                // Unexpected error, create error and log it
+                val unexpectedError = WidgetErrorHandler.WidgetError.UnknownError("Unexpected error in clock-out recording", e)
+                errorHandler.logError(this@WidgetUpdateService, unexpectedError, "handleClockOutRecording")
+                
+                // Still try to update widgets
+                repository.updateWidget(this@WidgetUpdateService)
             } finally {
                 stopSelf(startId)
             }
@@ -112,19 +140,23 @@ class WidgetUpdateService : Service() {
     }
     
     /**
-     * Handles widget update in background thread
+     * Handles widget update in background thread with error handling
      */
     private fun handleWidgetUpdate(startId: Int) {
         serviceScope.launch {
-            try {
-                val repository = WidgetRepository.create(this@WidgetUpdateService)
-                repository.updateWidget(this@WidgetUpdateService)
-            } catch (e: Exception) {
-                // Log error but don't crash the service
-                // In production, you might want to use proper logging
-            } finally {
-                stopSelf(startId)
+            val repository = WidgetRepository.create(this@WidgetUpdateService)
+            val errorHandler = WidgetErrorHandler()
+            
+            when (val result = repository.updateWidget(this@WidgetUpdateService)) {
+                is WidgetErrorHandler.WidgetResult.Success -> {
+                    // Update successful
+                }
+                is WidgetErrorHandler.WidgetResult.Error -> {
+                    errorHandler.logError(this@WidgetUpdateService, result.error, "handleWidgetUpdate")
+                }
             }
+            
+            stopSelf(startId)
         }
     }
 }
