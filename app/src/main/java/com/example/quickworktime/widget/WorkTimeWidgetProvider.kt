@@ -189,27 +189,8 @@ class WorkTimeWidgetProvider : AppWidgetProvider() {
     }
     
     private fun handleClockOut(context: Context) {
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
-                val repository = WidgetRepository.create(context)
-                
-                // Only record if no record exists for today
-                if (!repository.hasTodayRecord()) {
-                    val optimalTime = repository.calculateOptimalClockOutTime()
-                    repository.recordClockOut(optimalTime)
-                }
-                
-                // Update all widgets to reflect the new state
-                repository.updateWidget(context)
-            } catch (e: Exception) {
-                // If recording fails, still try to update widgets
-                val appWidgetManager = AppWidgetManager.getInstance(context)
-                val appWidgetIds = appWidgetManager.getAppWidgetIds(
-                    android.content.ComponentName(context, WorkTimeWidgetProvider::class.java)
-                )
-                onUpdate(context, appWidgetManager, appWidgetIds)
-            }
-        }
+        // Delegate clock-out processing to WidgetUpdateService for better performance
+        WidgetUpdateService.startClockOutRecording(context)
     }
     
     private fun handleTimeAdjustment(context: Context, intent: Intent) {

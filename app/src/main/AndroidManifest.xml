@@ -29,11 +29,18 @@
             android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="com.example.quickworktime.widget.ACTION_CLOCK_OUT" />
+                <action android:name="com.example.quickworktime.widget.ACTION_ADJUST_TIME" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/work_time_widget_info" />
         </receiver>
+
+        <!-- Widget Update Service -->
+        <service
+            android:name=".widget.WidgetUpdateService"
+            android:exported="false" />
     </application>
 
 </manifest>
