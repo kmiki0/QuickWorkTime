@@ -11,7 +11,12 @@
   - 時間計算のユニットテストを作成
   - _Requirements: 2.3, 2.4, 2.5_
 
-- [ ] 3. WidgetRepositoryクラスの実装
+- [x] 3. WidgetRepositoryクラスの実装
+
+
+
+
+
   - 既存のWorkInfoDaoとの連携機能を実装
   - 本日の勤務データ取得機能を実装
   - 退勤時間記録機能を実装
