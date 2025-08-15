@@ -142,4 +142,14 @@ class WidgetRepository(private val workInfoDao: WorkInfoDao) {
     suspend fun getTodayEndTime(): String? = withContext(Dispatchers.IO) {
         getTodayWorkInfo()?.endTime
     }
+    
+    /**
+     * Notifies all widgets that data has been updated
+     * Should be called after any work data modification
+     * 
+     * @param context Application context
+     */
+    suspend fun notifyDataUpdated(context: Context) = withContext(Dispatchers.Main) {
+        WidgetUpdateManager.notifyDataUpdated(context)
+    }
 }

@@ -90,6 +90,9 @@ class WidgetUpdateService : Service() {
                 // Record the clock-out time
                 repository.recordClockOut(clockOutTime)
                 
+                // Notify that data has been updated
+                repository.notifyDataUpdated(this@WidgetUpdateService)
+                
                 // Update all widget instances to reflect the new state
                 repository.updateWidget(this@WidgetUpdateService)
                 

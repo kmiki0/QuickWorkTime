@@ -2,6 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -41,6 +43,21 @@
         <service
             android:name=".widget.WidgetUpdateService"
             android:exported="false" />
+
+        <!-- Widget Update Receiver for automatic updates -->
+        <receiver
+            android:name=".widget.WidgetUpdateReceiver"
+            android:exported="true">
+            <intent-filter android:priority="1000">
+                <action android:name="android.intent.action.DATE_CHANGED" />
+                <action android:name="android.intent.action.TIME_SET" />
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <action android:name="com.example.quickworktime.DATA_UPDATED" />
+                <action android:name="com.example.quickworktime.widget.FORCE_UPDATE" />
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>
