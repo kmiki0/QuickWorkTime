@@ -8,6 +8,21 @@ import android.content.Intent
 import android.widget.RemoteViews
 import com.example.quickworktime.MainActivity
 import com.example.quickworktime.R
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+
+/**
+ * Data class representing the current state of the widget
+ */
+data class WidgetDisplayState(
+    val displayTime: String,
+    val dateText: String,
+    val hasRecord: Boolean,
+    val buttonText: String = "Exit"
+)
 
 /**
  * Implementation of App Widget functionality.
@@ -61,17 +76,36 @@ class WorkTimeWidgetProvider : AppWidgetProvider() {
         appWidgetManager: AppWidgetManager,
         appWidgetId: Int
     ) {
-        // Construct the RemoteViews object
-        val views = RemoteViews(context.packageName, R.layout.work_time_widget)
+        // Determine widget size and layout
+        val options = appWidgetManager.getAppWidgetOptions(appWidgetId)
+        val minWidth = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH)
+        val layoutId = if (minWidth < 180) R.layout.work_time_widget_small else R.layout.work_time_widget
+        
+        // Construct the RemoteViews object with appropriate layout
+        val views = RemoteViews(context.packageName, layoutId)
         
         // Set up click listeners
         setupClickListeners(context, views, appWidgetId)
         
-        // Update widget display
-        updateWidgetDisplay(context, views)
-        
-        // Instruct the widget manager to update the widget
-        appWidgetManager.updateAppWidget(appWidgetId, views)
+        // Update widget display asynchronously
+        CoroutineScope(Dispatchers.Main).launch {
+            try {
+                val widgetState = getWidgetDisplayState(context)
+                updateWidgetDisplay(views, widgetState)
+                
+                // Instruct the widget manager to update the widget
+                appWidgetManager.updateAppWidget(appWidgetId, views)
+            } catch (e: Exception) {
+                // Fallback to default display if data loading fails
+                val fallbackState = WidgetDisplayState(
+                    displayTime = "--:--",
+                    dateText = "エラー",
+                    hasRecord = false
+                )
+                updateWidgetDisplay(views, fallbackState)
+                appWidgetManager.updateAppWidget(appWidgetId, views)
+            }
+        }
     }
     
     private fun setupClickListeners(context: Context, views: RemoteViews, appWidgetId: Int) {
@@ -94,29 +128,93 @@ class WorkTimeWidgetProvider : AppWidgetProvider() {
         views.setOnClickPendingIntent(R.id.widget_clock_out_button, clockOutPendingIntent)
     }
     
-    private fun updateWidgetDisplay(context: Context, views: RemoteViews) {
-        // TODO: This will be implemented in later tasks
-        // For now, show placeholder text
-        views.setTextViewText(R.id.widget_time_display, "18:15")
-        views.setTextViewText(R.id.widget_clock_out_button, "Exit")
+    /**
+     * Gets the current widget display state based on today's work data
+     */
+    private suspend fun getWidgetDisplayState(context: Context): WidgetDisplayState {
+        val repository = WidgetRepository.create(context)
+        val todayWorkInfo = repository.getTodayWorkInfo()
+        val dateFormatter = DateTimeFormatter.ofPattern("M/d")
+        val todayText = LocalDate.now().format(dateFormatter)
+        
+        return if (todayWorkInfo?.endTime != null) {
+            // Has record state - show recorded end time
+            WidgetDisplayState(
+                displayTime = todayWorkInfo.endTime,
+                dateText = todayText,
+                hasRecord = true,
+                buttonText = "記録済み"
+            )
+        } else {
+            // No record state - show calculated optimal time
+            val optimalTime = repository.calculateOptimalClockOutTime()
+            WidgetDisplayState(
+                displayTime = optimalTime,
+                dateText = todayText,
+                hasRecord = false,
+                buttonText = "Exit"
+            )
+        }
+    }
+    
+    /**
+     * Updates the widget display using RemoteViews
+     */
+    private fun updateWidgetDisplay(views: RemoteViews, state: WidgetDisplayState) {
+        // Update time display
+        views.setTextViewText(R.id.widget_time_text, state.displayTime)
+        
+        // Update date display
+        views.setTextViewText(R.id.widget_date_text, state.dateText)
+        
+        // Update button text and state
+        views.setTextViewText(R.id.widget_clock_out_button, state.buttonText)
+        
+        // Disable button if already recorded
+        if (state.hasRecord) {
+            views.setInt(R.id.widget_clock_out_button, "setAlpha", 128) // Make button semi-transparent
+            views.setBoolean(R.id.widget_clock_out_button, "setEnabled", false)
+        } else {
+            views.setInt(R.id.widget_clock_out_button, "setAlpha", 255) // Make button fully opaque
+            views.setBoolean(R.id.widget_clock_out_button, "setEnabled", true)
+        }
+        
+        // Set content description for accessibility
+        val contentDescription = if (state.hasRecord) {
+            "退勤時刻: ${state.displayTime} (記録済み)"
+        } else {
+            "退勤予定時刻: ${state.displayTime}"
+        }
+        views.setContentDescription(R.id.widget_time_display, contentDescription)
     }
     
     private fun handleClockOut(context: Context) {
-        // TODO: This will be implemented in later tasks
-        // For now, just update all widgets
-        val appWidgetManager = AppWidgetManager.getInstance(context)
-        val appWidgetIds = appWidgetManager.getAppWidgetIds(
-            android.content.ComponentName(context, WorkTimeWidgetProvider::class.java)
-        )
-        onUpdate(context, appWidgetManager, appWidgetIds)
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val repository = WidgetRepository.create(context)
+                
+                // Only record if no record exists for today
+                if (!repository.hasTodayRecord()) {
+                    val optimalTime = repository.calculateOptimalClockOutTime()
+                    repository.recordClockOut(optimalTime)
+                }
+                
+                // Update all widgets to reflect the new state
+                repository.updateWidget(context)
+            } catch (e: Exception) {
+                // If recording fails, still try to update widgets
+                val appWidgetManager = AppWidgetManager.getInstance(context)
+                val appWidgetIds = appWidgetManager.getAppWidgetIds(
+                    android.content.ComponentName(context, WorkTimeWidgetProvider::class.java)
+                )
+                onUpdate(context, appWidgetManager, appWidgetIds)
+            }
+        }
     }
     
     private fun handleTimeAdjustment(context: Context, intent: Intent) {
-        // TODO: This will be implemented in later tasks
-        val timeComponent = intent.getStringExtra(EXTRA_TIME_COMPONENT)
-        val direction = intent.getStringExtra(EXTRA_DIRECTION)
-        
-        // Update all widgets after adjustment
+        // This will be fully implemented in task 6 (フリック操作による時間調整機能の実装)
+        // For now, just refresh the widget display
         val appWidgetManager = AppWidgetManager.getInstance(context)
         val appWidgetIds = appWidgetManager.getAppWidgetIds(
             android.content.ComponentName(context, WorkTimeWidgetProvider::class.java)
