@@ -113,7 +113,7 @@
         android:textStyle="bold"
         android:minHeight="@dimen/widget_button_min_height"
         android:background="@drawable/widget_exit_button_background"
-        android:textColor="@color/white"
+        android:textColor="@color/widget_text_primary"
         android:fontFamily="@font/jersey10_regular"
         android:elevation="@dimen/widget_elevation_small" />
 

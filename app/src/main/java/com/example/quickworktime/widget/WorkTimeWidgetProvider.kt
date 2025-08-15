@@ -60,6 +60,10 @@ class WorkTimeWidgetProvider : AppWidgetProvider() {
                 // Handle time adjustment action
                 handleTimeAdjustment(context, intent)
             }
+            Intent.ACTION_CONFIGURATION_CHANGED -> {
+                // Handle theme/configuration changes
+                handleConfigurationChanged(context)
+            }
         }
     }
 
@@ -211,5 +215,22 @@ class WorkTimeWidgetProvider : AppWidgetProvider() {
             android.content.ComponentName(context, WorkTimeWidgetProvider::class.java)
         )
         onUpdate(context, appWidgetManager, appWidgetIds)
+    }
+    
+    private fun handleConfigurationChanged(context: Context) {
+        // Handle theme changes by updating all widget instances
+        CoroutineScope(Dispatchers.Main).launch {
+            try {
+                val repository = WidgetRepository.create(context)
+                repository.updateWidgetTheme(context)
+            } catch (e: Exception) {
+                // Fallback to standard update if theme update fails
+                val appWidgetManager = AppWidgetManager.getInstance(context)
+                val appWidgetIds = appWidgetManager.getAppWidgetIds(
+                    android.content.ComponentName(context, WorkTimeWidgetProvider::class.java)
+                )
+                onUpdate(context, appWidgetManager, appWidgetIds)
+            }
+        }
     }
 }

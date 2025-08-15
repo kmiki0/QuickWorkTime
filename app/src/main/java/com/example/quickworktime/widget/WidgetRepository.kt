@@ -3,6 +3,7 @@ package com.example.quickworktime.widget
 import android.appwidget.AppWidgetManager
 import android.content.ComponentName
 import android.content.Context
+import android.content.res.Configuration
 import com.example.quickworktime.room.AppDatabase
 import com.example.quickworktime.room.WorkInfo
 import com.example.quickworktime.room.WorkInfoDao
@@ -151,5 +152,38 @@ class WidgetRepository(private val workInfoDao: WorkInfoDao) {
      */
     suspend fun notifyDataUpdated(context: Context) = withContext(Dispatchers.Main) {
         WidgetUpdateManager.notifyDataUpdated(context)
+    }
+    
+    /**
+     * Checks if the system is currently in dark mode
+     * 
+     * @param context Application context
+     * @return true if dark mode is active, false otherwise
+     */
+    fun isDarkMode(context: Context): Boolean {
+        val nightModeFlags = context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
+        return nightModeFlags == Configuration.UI_MODE_NIGHT_YES
+    }
+    
+    /**
+     * Forces widget update when theme changes
+     * Should be called when system theme changes are detected
+     * 
+     * @param context Application context
+     */
+    suspend fun updateWidgetTheme(context: Context) = withContext(Dispatchers.Main) {
+        try {
+            val appWidgetManager = AppWidgetManager.getInstance(context)
+            val componentName = ComponentName(context, WorkTimeWidgetProvider::class.java)
+            val appWidgetIds = appWidgetManager.getAppWidgetIds(componentName)
+            
+            if (appWidgetIds.isNotEmpty()) {
+                // Force update all widgets to apply new theme
+                val widgetProvider = WorkTimeWidgetProvider()
+                widgetProvider.onUpdate(context, appWidgetManager, appWidgetIds)
+            }
+        } catch (e: Exception) {
+            // Log error but don't throw to prevent crashes
+        }
     }
 }
