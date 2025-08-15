@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_background"
+    android:orientation="vertical"
+    android:padding="4dp"
+    android:gravity="center">
+
+    <!-- Time Display Section -->
+    <LinearLayout
+        android:id="@+id/widget_time_display"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:background="?android:attr/selectableItemBackground"
+        android:clickable="true"
+        android:focusable="true">
+
+        <TextView
+            android:id="@+id/widget_time_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="18:15"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="?android:attr/textColorPrimary"
+            android:fontFamily="monospace" />
+
+        <TextView
+            android:id="@+id/widget_date_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="今日"
+            android:textSize="10sp"
+            android:textColor="?android:attr/textColorSecondary"
+            android:layout_marginStart="4dp"
+            android:gravity="center_vertical" />
+
+    </LinearLayout>
+
+    <!-- Clock Out Button -->
+    <Button
+        android:id="@+id/widget_clock_out_button"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:text="Exit"
+        android:textSize="12sp"
+        android:minHeight="32dp"
+        android:background="@drawable/widget_button_background"
+        android:textColor="?android:attr/textColorPrimary"
+        style="?android:attr/buttonBarButtonStyle" />
+
+</LinearLayout>
