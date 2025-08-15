@@ -566,6 +566,14 @@ class HomeFragment : Fragment() {
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        // Refresh data when fragment resumes to ensure latest data is displayed
+        // This is especially important when app is launched from widget
+        val date: String? = arguments?.getString("date")
+        vm.getDisplayData(date ?: "")
+    }
+
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
