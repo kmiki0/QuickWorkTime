@@ -2,13 +2,13 @@
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="rectangle">
     
-    <solid android:color="@color/widget_background_light" />
+    <solid android:color="@color/widget_background_dark" />
     
     <corners android:radius="12dp" />
     
     <stroke
         android:width="2dp"
-        android:color="@color/widget_border_light" />
+        android:color="@color/widget_border_dark" />
     
     <!-- Add subtle shadow effect -->
     <padding

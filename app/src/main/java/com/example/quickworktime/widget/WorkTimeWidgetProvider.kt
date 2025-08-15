@@ -161,11 +161,21 @@ class WorkTimeWidgetProvider : AppWidgetProvider() {
      * Updates the widget display using RemoteViews
      */
     private fun updateWidgetDisplay(views: RemoteViews, state: WidgetDisplayState) {
-        // Update time display
-        views.setTextViewText(R.id.widget_time_text, state.displayTime)
+        // Split time into hour and minute components
+        val timeParts = state.displayTime.split(":")
+        val hour = if (timeParts.size >= 2) timeParts[0] else "--"
+        val minute = if (timeParts.size >= 2) timeParts[1] else "--"
+        
+        // Update time display components
+        views.setTextViewText(R.id.widget_hour_text, hour)
+        views.setTextViewText(R.id.widget_minute_text, minute)
         
         // Update date display
         views.setTextViewText(R.id.widget_date_text, state.dateText)
+        
+        // Update status text
+        val statusText = if (state.hasRecord) "記録済み" else "退勤予定"
+        views.setTextViewText(R.id.widget_status_text, statusText)
         
         // Update button text and state
         views.setTextViewText(R.id.widget_clock_out_button, state.buttonText)
