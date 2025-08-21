@@ -3,4 +3,10 @@
     <string name="title_home">Home</string>
     <string name="title_dashboard">Dashboard</string>
     <string name="title_notifications">Notifications</string>
+    
+    <!-- Widget related strings -->
+    <string name="widget_description">勤務時間を記録するウィジェット</string>
+    <string name="widget_clock_out">Exit</string>
+    <string name="widget_today">今日</string>
+    <string name="widget_no_record">記録なし</string>
 </resources>

@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_background"
+    android:orientation="vertical"
+    android:padding="@dimen/widget_padding_small"
+    android:gravity="center">
+
+    <!-- Time Display Section -->
+    <LinearLayout
+        android:id="@+id/widget_time_display"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:background="@drawable/widget_time_display_background"
+        android:clickable="true"
+        android:focusable="true"
+        android:padding="4dp">
+
+        <!-- Time Section with Hour and Minute separated for flick gestures -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center">
+
+            <TextView
+                android:id="@+id/widget_hour_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="18"
+                android:textSize="@dimen/widget_time_text_size_small"
+                android:textStyle="bold"
+                android:textColor="@color/widget_text_primary"
+                android:fontFamily="@font/jersey10_regular"
+                android:background="@drawable/widget_time_component_background"
+                android:clickable="true"
+                android:focusable="true"
+                android:padding="2dp"
+                android:minWidth="@dimen/widget_time_component_min_width_small"
+                android:gravity="center" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text=":"
+                android:textSize="@dimen/widget_time_text_size_small"
+                android:textStyle="bold"
+                android:textColor="@color/widget_text_primary"
+                android:fontFamily="@font/jersey10_regular"
+                android:layout_marginHorizontal="1dp" />
+
+            <TextView
+                android:id="@+id/widget_minute_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="15"
+                android:textSize="@dimen/widget_time_text_size_small"
+                android:textStyle="bold"
+                android:textColor="@color/widget_text_primary"
+                android:fontFamily="@font/jersey10_regular"
+                android:background="@drawable/widget_time_component_background"
+                android:clickable="true"
+                android:focusable="true"
+                android:padding="2dp"
+                android:minWidth="@dimen/widget_time_component_min_width_small"
+                android:gravity="center" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:layout_marginTop="2dp">
+
+            <TextView
+                android:id="@+id/widget_date_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="今日"
+                android:textSize="@dimen/widget_date_text_size_small"
+                android:textColor="@color/widget_text_secondary"
+                android:fontFamily="@font/jersey10_regular" />
+
+            <TextView
+                android:id="@+id/widget_status_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="退勤予定"
+                android:textSize="@dimen/widget_status_text_size_small"
+                android:textColor="@color/widget_text_secondary"
+                android:fontFamily="@font/jersey10_regular"
+                android:layout_marginStart="4dp"
+                android:visibility="visible" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <!-- Clock Out Button -->
+    <Button
+        android:id="@+id/widget_clock_out_button"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:text="Exit"
+        android:textSize="@dimen/widget_button_text_size_small"
+        android:textStyle="bold"
+        android:minHeight="@dimen/widget_button_min_height"
+        android:background="@drawable/widget_exit_button_background"
+        android:textColor="@color/widget_text_primary"
+        android:fontFamily="@font/jersey10_regular"
+        android:elevation="@dimen/widget_elevation_small" />
+
+</LinearLayout>

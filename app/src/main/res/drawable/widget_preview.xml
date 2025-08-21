@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    
+    <!-- Background -->
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="@color/widget_background_light" />
+            <corners android:radius="12dp" />
+            <stroke
+                android:width="2dp"
+                android:color="@color/widget_border_light" />
+        </shape>
+    </item>
+    
+    <!-- Time display area -->
+    <item
+        android:left="8dp"
+        android:top="8dp"
+        android:right="80dp"
+        android:bottom="8dp">
+        <shape android:shape="rectangle">
+            <solid android:color="@android:color/transparent" />
+            <corners android:radius="6dp" />
+            <stroke
+                android:width="1dp"
+                android:color="@color/widget_border_light" />
+        </shape>
+    </item>
+    
+    <!-- Exit button area -->
+    <item
+        android:left="80dp"
+        android:top="12dp"
+        android:right="12dp"
+        android:bottom="12dp">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/widget_button_background_light" />
+            <corners android:radius="6dp" />
+        </shape>
+    </item>
+    
+</layer-list>

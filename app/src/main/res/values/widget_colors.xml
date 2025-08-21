@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Widget specific colors for light theme -->
+    <color name="widget_background_light">#FFFFFF</color>
+    <color name="widget_border_light">#E0E0E0</color>
+    <color name="widget_text_primary_light">#212121</color>
+    <color name="widget_text_secondary_light">#757575</color>
+    <color name="widget_button_background_light">@color/button_normal</color>
+    <color name="widget_button_text_light">#FFFFFF</color>
+    <color name="widget_time_component_pressed_light">#E3F2FD</color>
+    
+    <!-- Additional theme-aware colors -->
+    <color name="widget_accent_light">@color/purple_500</color>
+    <color name="widget_surface_light">#F5F5F5</color>
+</resources>

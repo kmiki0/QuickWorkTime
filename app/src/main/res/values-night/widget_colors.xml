@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Widget specific colors for dark theme -->
+    <color name="widget_background_dark">@color/base_background_color</color>
+    <color name="widget_border_dark">#424450</color>
+    <color name="widget_text_primary_dark">#FFFFFF</color>
+    <color name="widget_text_secondary_dark">#B0B0B0</color>
+    <color name="widget_button_background_dark">@color/button_normal</color>
+    <color name="widget_button_text_dark">#FFFFFF</color>
+    <color name="widget_time_component_pressed_dark">#555A65</color>
+    
+    <!-- Additional theme-aware colors -->
+    <color name="widget_accent_dark">@color/purple_500</color>
+    <color name="widget_surface_dark">#3A3D47</color>
+</resources>

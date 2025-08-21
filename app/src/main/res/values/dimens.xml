@@ -2,4 +2,28 @@
     <!-- Default screen margins, per the Android Design guidelines. -->
     <dimen name="activity_horizontal_margin">16dp</dimen>
     <dimen name="activity_vertical_margin">16dp</dimen>
+    
+    <!-- Widget dimensions -->
+    <dimen name="widget_padding">12dp</dimen>
+    <dimen name="widget_padding_small">6dp</dimen>
+    <dimen name="widget_corner_radius">12dp</dimen>
+    <dimen name="widget_border_width">2dp</dimen>
+    
+    <!-- Widget text sizes -->
+    <dimen name="widget_time_text_size">22sp</dimen>
+    <dimen name="widget_time_text_size_small">18sp</dimen>
+    <dimen name="widget_date_text_size">12sp</dimen>
+    <dimen name="widget_date_text_size_small">9sp</dimen>
+    <dimen name="widget_status_text_size">10sp</dimen>
+    <dimen name="widget_status_text_size_small">8sp</dimen>
+    <dimen name="widget_button_text_size">16sp</dimen>
+    <dimen name="widget_button_text_size_small">14sp</dimen>
+    
+    <!-- Widget component dimensions -->
+    <dimen name="widget_time_component_min_width">36dp</dimen>
+    <dimen name="widget_time_component_min_width_small">28dp</dimen>
+    <dimen name="widget_button_min_width">72dp</dimen>
+    <dimen name="widget_button_min_height">36dp</dimen>
+    <dimen name="widget_elevation">2dp</dimen>
+    <dimen name="widget_elevation_small">1dp</dimen>
 </resources>
