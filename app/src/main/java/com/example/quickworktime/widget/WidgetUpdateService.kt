@@ -4,6 +4,7 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.os.IBinder
+import android.util.Log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -66,79 +67,106 @@ class WidgetUpdateService : Service() {
         super.onDestroy()
         serviceJob.cancel()
     }
-    
+
     /**
-     * Handles clock-out recording in background thread with comprehensive error handling
+     * バックグラウンドスレッドで退勤記録処理を行う
      */
     private fun handleClockOutRecording(intent: Intent, startId: Int) {
         serviceScope.launch {
-            val repository = WidgetRepository.create(this@WidgetUpdateService)
-            val errorHandler = WidgetErrorHandler()
-            
             try {
-                // Check if today already has a record
-                if (repository.hasTodayRecord()) {
-                    // Already recorded, just update widget to show current state
-                    when (val updateResult = repository.updateWidget(this@WidgetUpdateService)) {
-                        is WidgetErrorHandler.WidgetResult.Error -> {
-                            errorHandler.logError(this@WidgetUpdateService, updateResult.error, "updateWidget after duplicate record check")
-                        }
-                        is WidgetErrorHandler.WidgetResult.Success -> {
-                            // Update successful
+                val repository = WidgetRepository.create(this@WidgetUpdateService)
+                repository.initialize(this@WidgetUpdateService) // 重要: 初期化を確実に実行
+                val errorHandler = WidgetErrorHandler()
+
+                // Intentから退勤時間を取得、なければ最適時間を計算
+                val clockOutTime = intent.getStringExtra(EXTRA_CLOCK_OUT_TIME)
+                    ?: repository.calculateOptimalClockOutTime()
+
+                // 今日のレコードが既に存在するかをチェック - 適切なエラーハンドリング付き
+                val todayRecordResult = repository.getTodayWorkInfo()
+                when (todayRecordResult) {
+                    is WidgetErrorHandler.WidgetResult.Success -> {
+                        val existingRecord = todayRecordResult.data
+
+                        if (existingRecord?.endTime != null) {
+                            // 既に終了時間が記録済み、ウィジェットの現在状態を更新するだけ
+                            when (val updateResult = repository.updateWidget(this@WidgetUpdateService)) {
+                                is WidgetErrorHandler.WidgetResult.Error -> {
+                                    errorHandler.logError(this@WidgetUpdateService, updateResult.error, "重複記録チェック後のウィジェット更新")
+                                }
+                                is WidgetErrorHandler.WidgetResult.Success -> {
+                                    Log.i("WidgetUpdateService", "重複チェック後ウィジェット更新成功")
+                                }
+                            }
+                            stopSelf(startId)
+                            return@launch
+                        } else {
+                            // レコードは存在するが終了時間なし、記録処理を続行
+                            Log.i("WidgetUpdateService", "終了時間なしの既存レコード発見、退勤記録を続行")
                         }
                     }
-                    stopSelf(startId)
-                    return@launch
+                    is WidgetErrorHandler.WidgetResult.Error -> {
+                        // 既存レコードチェックでエラー、記録処理は続行
+                        Log.w("WidgetUpdateService", "既存レコードチェックでエラー、記録処理続行: ${todayRecordResult.error.message}")
+                    }
                 }
-                
-                // Get clock-out time from intent or calculate optimal time
-                val clockOutTime = intent.getStringExtra(EXTRA_CLOCK_OUT_TIME) 
-                    ?: repository.calculateOptimalClockOutTime()
-                
-                // Record the clock-out time with error handling
+
+                // エラーハンドリング付きで退勤時間を記録
+                Log.i("WidgetUpdateService", "退勤時間を記録中: $clockOutTime")
                 when (val recordResult = repository.recordClockOut(clockOutTime)) {
                     is WidgetErrorHandler.WidgetResult.Success -> {
-                        // Recording successful, notify and update widgets
+                        // 記録成功、通知とウィジェット更新
+                        Log.i("WidgetUpdateService", "退勤記録成功")
                         repository.notifyDataUpdated(this@WidgetUpdateService)
-                        
+
                         when (val updateResult = repository.updateWidget(this@WidgetUpdateService)) {
                             is WidgetErrorHandler.WidgetResult.Error -> {
-                                errorHandler.logError(this@WidgetUpdateService, updateResult.error, "updateWidget after successful record")
+                                errorHandler.logError(this@WidgetUpdateService, updateResult.error, "記録成功後のウィジェット更新")
                             }
                             is WidgetErrorHandler.WidgetResult.Success -> {
-                                // Update successful
+                                Log.i("WidgetUpdateService", "記録後ウィジェット更新成功")
                             }
                         }
                     }
                     is WidgetErrorHandler.WidgetResult.Error -> {
-                        // Recording failed, log error and still try to update widgets
+                        // 記録失敗、エラーログを出力してもウィジェット更新は試行
+                        Log.e("WidgetUpdateService", "退勤記録失敗: ${recordResult.error.message}")
                         errorHandler.logError(this@WidgetUpdateService, recordResult.error, "recordClockOut")
-                        
-                        // Try to update widgets to show current state (might show error state)
+
+                        // 現在の状態を表示するためウィジェット更新を試行（エラー状態を表示する可能性）
                         when (val updateResult = repository.updateWidget(this@WidgetUpdateService)) {
                             is WidgetErrorHandler.WidgetResult.Error -> {
-                                errorHandler.logError(this@WidgetUpdateService, updateResult.error, "updateWidget after failed record")
+                                errorHandler.logError(this@WidgetUpdateService, updateResult.error, "記録失敗後のウィジェット更新")
                             }
                             is WidgetErrorHandler.WidgetResult.Success -> {
-                                // Update successful
+                                Log.i("WidgetUpdateService", "記録失敗後ウィジェット更新")
                             }
                         }
                     }
                 }
-                
+
             } catch (e: Exception) {
-                // Unexpected error, create error and log it
-                val unexpectedError = WidgetErrorHandler.WidgetError.UnknownError("Unexpected error in clock-out recording", e)
+                // 予期しないエラー、エラーを作成してログ出力
+                Log.e("WidgetUpdateService", "退勤記録中に予期しないエラー", e)
+                val unexpectedError = WidgetErrorHandler.WidgetError.UnknownError("退勤記録中に予期しないエラー", e)
+                val errorHandler = WidgetErrorHandler()
                 errorHandler.logError(this@WidgetUpdateService, unexpectedError, "handleClockOutRecording")
-                
-                // Still try to update widgets
-                repository.updateWidget(this@WidgetUpdateService)
+
+                // それでもウィジェット更新は試行
+                try {
+                    val repository = WidgetRepository.create(this@WidgetUpdateService)
+                    repository.initialize(this@WidgetUpdateService)
+                    repository.updateWidget(this@WidgetUpdateService)
+                } catch (updateException: Exception) {
+                    Log.e("WidgetUpdateService", "エラー後のウィジェット更新失敗", updateException)
+                }
             } finally {
                 stopSelf(startId)
             }
         }
     }
-    
+
+
     /**
      * Handles widget update in background thread with error handling
      */

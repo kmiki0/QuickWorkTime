@@ -51,7 +51,6 @@ class WorkTimeWidgetProviderTest {
     @Test
     fun `test widget provider constants are defined`() {
         assert(WorkTimeWidgetProvider.ACTION_CLOCK_OUT == "com.example.quickworktime.widget.ACTION_CLOCK_OUT")
-        assert(WorkTimeWidgetProvider.ACTION_ADJUST_TIME == "com.example.quickworktime.widget.ACTION_ADJUST_TIME")
         assert(WorkTimeWidgetProvider.EXTRA_TIME_COMPONENT == "time_component")
         assert(WorkTimeWidgetProvider.EXTRA_DIRECTION == "direction")
     }
@@ -64,8 +63,7 @@ class WorkTimeWidgetProviderTest {
         
         // Verify that the constants needed for app launch are defined
         assert(WorkTimeWidgetProvider.ACTION_CLOCK_OUT.isNotEmpty())
-        assert(WorkTimeWidgetProvider.ACTION_ADJUST_TIME.isNotEmpty())
-        
+
         // This test ensures that the widget provider class exists and can be instantiated
         // The actual app launch functionality is tested through integration tests
         assert(widgetProvider != null)

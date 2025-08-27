@@ -24,26 +24,47 @@ class WidgetRepository(private val workInfoDao: WorkInfoDao) {
     companion object {
         private const val TAG = "WidgetRepository"
         private val dateFormatter = DateTimeFormatter.ofPattern("yyyyMMdd")
-        
+
         /**
-         * Creates a WidgetRepository instance with the database context
+         * WidgetRepositoryインスタンスを作成
          */
         fun create(context: Context): WidgetRepository {
-            val database = AppDatabase.getDatabase(context)
-            return WidgetRepository(database.workInfo())
+            try {
+                val database = AppDatabase.getDatabase(context)
+                val repository = WidgetRepository(database.workInfo())
+                repository.initialize(context) // 自動的に初期化
+                return repository
+            } catch (e: Exception) {
+                Log.e(TAG, "WidgetRepository作成エラー", e)
+                throw e
+            }
         }
     }
     
     private val errorHandler = WidgetErrorHandler()
     private lateinit var stateCache: WidgetStateCache
-    
+
     /**
-     * Initializes the repository with context-dependent components
+     * コンテキスト依存コンポーネントでリポジトリを初期化
+     * より良いエラーハンドリングで強化
      */
     fun initialize(context: Context) {
-        stateCache = WidgetStateCache(context)
+        try {
+            if (!::stateCache.isInitialized) {
+                stateCache = WidgetStateCache(context)
+                Log.d(TAG, "WidgetRepository初期化成功")
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "WidgetRepository初期化エラー", e)
+            // フォールバック用ステートキャッシュを作成
+            try {
+                stateCache = WidgetStateCache(context)
+            } catch (fallbackException: Exception) {
+                Log.e(TAG, "フォールバックステートキャッシュ作成失敗", fallbackException)
+            }
+        }
     }
-    
+
     /**
      * Gets today's work information from the database with error handling
      * 
@@ -253,15 +274,21 @@ class WidgetRepository(private val workInfoDao: WorkInfoDao) {
         if (!::stateCache.isInitialized) {
             initialize(context)
         }
-        
+
         val result = errorHandler.executeWithRetry(
             operation = {
                 val todayWorkInfo = getTodayWorkInfoOrNull()
                 val dateFormatter = DateTimeFormatter.ofPattern("M/d")
                 val todayText = LocalDate.now().format(dateFormatter)
-                
+
+                // 現在時刻と計算結果をログ出力
+                val currentTime = java.time.LocalTime.now()
+                val optimalTime = TimeCalculationUtils.getCurrentRoundedTime()
+                Log.i("WidgetDebug", "現在時刻: $currentTime -> 計算結果: $optimalTime")
+
                 if (todayWorkInfo?.endTime != null) {
                     // Has record state - show recorded end time
+                    Log.i("WidgetDebug", "記録済み状態: endTime=${todayWorkInfo.endTime}")
                     WidgetDisplayState(
                         displayTime = todayWorkInfo.endTime,
                         dateText = todayText,
@@ -270,7 +297,7 @@ class WidgetRepository(private val workInfoDao: WorkInfoDao) {
                     )
                 } else {
                     // No record state - show calculated optimal time
-                    val optimalTime = calculateOptimalClockOutTime()
+                    Log.i("WidgetDebug", "未記録状態: 計算時間=$optimalTime")
                     WidgetDisplayState(
                         displayTime = optimalTime,
                         dateText = todayText,
@@ -280,23 +307,21 @@ class WidgetRepository(private val workInfoDao: WorkInfoDao) {
                 }
             }
         )
-        
-        // Handle result and caching
+
+        // 結果をログ出力
         when (result) {
             is WidgetErrorHandler.WidgetResult.Success -> {
-                // Cache the successful state
+                Log.i("WidgetDebug", "getWidgetDisplayState成功: ${result.data}")
                 stateCache.saveLastGoodState(result.data)
                 result
             }
             is WidgetErrorHandler.WidgetResult.Error -> {
-                // Try to use cached state if available and appropriate
+                Log.e("WidgetDebug", "getWidgetDisplayState失敗: ${result.error.message}")
                 val cachedState = stateCache.getLastGoodState()
                 if (errorHandler.shouldUseCachedState(result.error, cachedState)) {
-                    Log.i(TAG, "Using cached state due to error: ${result.error.message}")
+                    Log.i("WidgetDebug", "キャッシュ状態使用: $cachedState")
                     WidgetErrorHandler.WidgetResult.Success(cachedState!!)
                 } else {
-                    // Return error state
-                    errorHandler.logError(context, result.error, "getWidgetDisplayState")
                     result
                 }
             }
