@@ -113,7 +113,7 @@ class WidgetUpdateService : Service() {
 
                 // エラーハンドリング付きで退勤時間を記録
                 Log.i("WidgetUpdateService", "退勤時間を記録中: $clockOutTime")
-                when (val recordResult = repository.recordClockOut(clockOutTime)) {
+                when (val recordResult = repository.recordClockOut(clockOutTime.toString())) {
                     is WidgetErrorHandler.WidgetResult.Success -> {
                         // 記録成功、通知とウィジェット更新
                         Log.i("WidgetUpdateService", "退勤記録成功")

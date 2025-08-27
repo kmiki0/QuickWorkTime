@@ -1,3 +1,4 @@
+
 package com.example.quickworktime.widget
 
 import android.appwidget.AppWidgetManager
@@ -7,7 +8,7 @@ import android.content.res.Configuration
 import android.util.Log
 import com.example.quickworktime.room.AppDatabase
 import com.example.quickworktime.room.WorkInfo
-import com.example.quickworktime.room.WorkInfoDao
+import com.example.quickworktime.room.repository.WorkInfoRepository
 import com.example.quickworktime.utils.TimeCalculationUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -15,74 +16,53 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
 /**
- * Repository class for widget-related data operations
- * Handles database interactions and time calculations for the widget
- * Now includes comprehensive error handling and retry mechanisms
+ * ウィジェット関連のデータ操作
+ * データベース操作はWorkInfoRepositoryに委譲し、ウィジェット固有の機能を処理
  */
-class WidgetRepository(private val workInfoDao: WorkInfoDao) {
-    
+class WidgetRepository(
+    private val workInfoRepository: WorkInfoRepository,
+    private val context: Context
+) {
     companion object {
         private const val TAG = "WidgetRepository"
         private val dateFormatter = DateTimeFormatter.ofPattern("yyyyMMdd")
 
         /**
-         * WidgetRepositoryインスタンスを作成
+         * データベースコンテキストからWidgetRepositoryインスタンスを作成
          */
         fun create(context: Context): WidgetRepository {
-            try {
-                val database = AppDatabase.getDatabase(context)
-                val repository = WidgetRepository(database.workInfo())
-                repository.initialize(context) // 自動的に初期化
-                return repository
-            } catch (e: Exception) {
-                Log.e(TAG, "WidgetRepository作成エラー", e)
-                throw e
-            }
+            val database = AppDatabase.getDatabase(context)
+            val workInfoRepository = WorkInfoRepository(database.workInfo())
+            return WidgetRepository(workInfoRepository, context)
         }
     }
-    
+
     private val errorHandler = WidgetErrorHandler()
     private lateinit var stateCache: WidgetStateCache
 
     /**
-     * コンテキスト依存コンポーネントでリポジトリを初期化
-     * より良いエラーハンドリングで強化
+     * コンテキスト依存コンポーネントでRepositoryを初期化
      */
     fun initialize(context: Context) {
-        try {
-            if (!::stateCache.isInitialized) {
-                stateCache = WidgetStateCache(context)
-                Log.d(TAG, "WidgetRepository初期化成功")
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "WidgetRepository初期化エラー", e)
-            // フォールバック用ステートキャッシュを作成
-            try {
-                stateCache = WidgetStateCache(context)
-            } catch (fallbackException: Exception) {
-                Log.e(TAG, "フォールバックステートキャッシュ作成失敗", fallbackException)
-            }
-        }
+        stateCache = WidgetStateCache(context)
     }
 
     /**
-     * Gets today's work information from the database with error handling
-     * 
-     * @return WidgetResult containing WorkInfo for today if exists, or error information
+     * エラーハンドリングを含む今日の勤務情報をデータベースから取得
+     * @return 今日のWorkInfoが存在する場合はそれを、エラー情報を含むWidgetResultを返す
      */
     suspend fun getTodayWorkInfo(): WidgetErrorHandler.WidgetResult<WorkInfo?> = withContext(Dispatchers.IO) {
         errorHandler.executeWithRetry(
             operation = {
                 val today = LocalDate.now().format(dateFormatter)
-                workInfoDao.getWorkInfoByDate(today)
+                workInfoRepository.getWorkInfoByDate(today)
             }
         )
     }
-    
+
     /**
-     * Gets today's work information with fallback to null (for backward compatibility)
-     * 
-     * @return WorkInfo for today if exists, null otherwise
+     * 今日の勤務情報を取得（後方互換性のためnullにフォールバック）
+     * @return 今日のWorkInfoが存在する場合はそれを、それ以外はnullを返す
      */
     suspend fun getTodayWorkInfoOrNull(): WorkInfo? = withContext(Dispatchers.IO) {
         when (val result = getTodayWorkInfo()) {
@@ -93,89 +73,77 @@ class WidgetRepository(private val workInfoDao: WorkInfoDao) {
             }
         }
     }
-    
+
     /**
-     * Calculates the optimal clock-out time based on current time
-     * Rounds down current time to the nearest 5-minute interval
-     * 
-     * @return Formatted time string (HH:mm) representing optimal clock-out time
+     * 最適な退勤時刻を計算（5分単位で切り下げ）
+     *
+     * @return フォーマット済み時刻文字列 (HH:mm)
      */
-    suspend fun calculateOptimalClockOutTime(): String = withContext(Dispatchers.Default) {
-        TimeCalculationUtils.getCurrentRoundedTime()
-    }
-    
-    /**
-     * Adjusts the given time by specified hour and minute deltas
-     * Used for flick gesture time adjustments
-     * 
-     * @param currentTime Base time in "HH:mm" format
-     * @param hourDelta Hours to add/subtract (±1 for flick gestures)
-     * @param minuteDelta Minutes to add/subtract (±5 for flick gestures)
-     * @return Adjusted time in "HH:mm" format
-     */
-    suspend fun adjustTime(currentTime: String, hourDelta: Int, minuteDelta: Int): String = 
-        withContext(Dispatchers.Default) {
-            TimeCalculationUtils.adjustTime(currentTime, hourDelta, minuteDelta)
-        }
-    
-    /**
-     * Records clock-out time for today with comprehensive error handling
-     * Creates new WorkInfo if doesn't exist, updates existing one if it does
-     * 
-     * @param time Clock-out time in "HH:mm" format
-     * @return WidgetResult indicating success or failure
-     */
-    suspend fun recordClockOut(time: String): WidgetErrorHandler.WidgetResult<Unit> = withContext(Dispatchers.IO) {
+    suspend fun calculateOptimalClockOutTime(): WidgetErrorHandler.WidgetResult<String> = withContext(Dispatchers.IO) {
         errorHandler.executeWithRetry(
             operation = {
-                val today = LocalDate.now().format(dateFormatter)
-                
-                // Try to get existing work info, create new if not found
-                val existingWorkInfo = try {
-                    workInfoDao.getWorkInfoByDate(today)
-                } catch (e: Exception) {
-                    null
-                }
-                
-                if (existingWorkInfo != null) {
-                    // Update existing record with new end time
-                    val updatedWorkInfo = existingWorkInfo.copy(endTime = time)
-                    workInfoDao.updateWorkInfo(updatedWorkInfo)
-                } else {
-                    // No existing record found, create new one
-                    val newWorkInfo = WorkInfo(
-                        date = today,
-                        startTime = "09:00", // Default start time
-                        endTime = time,
-                        workingTime = "0:00", // Will be calculated later if needed
-                        breakTime = "1:00",   // Default break time
-                        isHoliday = false,
-                        isNationalHoliday = false,
-                        weekday = LocalDate.now().dayOfWeek.name
-                    )
-                    workInfoDao.insertWorkInfo(newWorkInfo)
+                TimeCalculationUtils.getCurrentRoundedTime()
+            }
+        )
+    }
+
+    /**
+    * エラーハンドリングを含む指定されたデルタ値による時刻調整
+    * @param currentTime 現在時刻 (HH:mm形式)
+    * @param hourDelta 加算/減算する時間
+    * @param minuteDelta 加算/減算する分
+    * @return 調整後の時刻文字列またはエラー
+    */
+    suspend fun adjustTime(
+        currentTime: String,
+        hourDelta: Int,
+        minuteDelta: Int
+    ): WidgetErrorHandler.WidgetResult<String> = withContext(Dispatchers.IO) {
+        errorHandler.executeWithRetry(
+            operation = {
+                TimeCalculationUtils.adjustTime(currentTime, hourDelta, minuteDelta)
+            }
+        )
+    }
+
+    /**
+     * 包括的なエラーハンドリングを含むWorkInfoRepositoryを使用した退勤時刻記録
+     *
+     * @param time 退勤時刻 (HH:mm形式)
+     * @return 成功または失敗の詳細を示すWidgetResult
+     */
+    suspend fun recordClockOut(time: String): WidgetErrorHandler.WidgetResult<Unit> = withContext(Dispatchers.IO) {
+        if (!::stateCache.isInitialized) {
+            initialize(context)
+        }
+
+        errorHandler.executeWithRetry(
+            operation = {
+                val success = workInfoRepository.recordClockOutForWidget(time)
+                if (!success) {
+                    throw Exception("Failed to record clock out time: $time")
                 }
             }
         )
     }
-    
+
     /**
-     * Triggers widget update for all instances with error handling and retry
-     * 
-     * @param context Application context
-     * @return WidgetResult indicating success or failure
+     * エラーハンドリングとリトライ機能を含む全ウィジェットインスタンスの更新をトリガー
+     *
+     * @param context アプリケーションコンテキスト
+     * @return 成功または失敗を示すWidgetResult
      */
     suspend fun updateWidget(context: Context): WidgetErrorHandler.WidgetResult<Unit> = withContext(Dispatchers.Main) {
         if (!::stateCache.isInitialized) {
             initialize(context)
         }
-        
+
         errorHandler.executeWithRetry(
             operation = {
                 val appWidgetManager = AppWidgetManager.getInstance(context)
                 val componentName = ComponentName(context, WorkTimeWidgetProvider::class.java)
                 val appWidgetIds = appWidgetManager.getAppWidgetIds(componentName)
-                
+
                 if (appWidgetIds.isNotEmpty()) {
                     val widgetProvider = WorkTimeWidgetProvider()
                     widgetProvider.onUpdate(context, appWidgetManager, appWidgetIds)
@@ -184,11 +152,11 @@ class WidgetRepository(private val workInfoDao: WorkInfoDao) {
             maxRetries = 2 // Fewer retries for UI updates
         )
     }
-    
+
     /**
-     * Checks if today has any work record with error handling
-     * 
-     * @return true if today has work record, false otherwise or on error
+     * エラーハンドリングを含む今日の勤務記録の存在確認
+     *
+     * @return 今日の勤務記録が存在する場合true、それ以外またはエラー時はfalse
      */
     suspend fun hasTodayRecord(): Boolean = withContext(Dispatchers.IO) {
         when (val result = getTodayWorkInfo()) {
@@ -199,11 +167,11 @@ class WidgetRepository(private val workInfoDao: WorkInfoDao) {
             }
         }
     }
-    
+
     /**
-     * Gets today's end time if exists with error handling
-     * 
-     * @return End time string if exists, null otherwise or on error
+     * エラーハンドリングを含む今日の終了時刻の取得
+     *
+     * @return 終了時刻文字列が存在する場合はそれを、それ以外またはエラー時はnull
      */
     suspend fun getTodayEndTime(): String? = withContext(Dispatchers.IO) {
         when (val result = getTodayWorkInfo()) {
@@ -214,117 +182,90 @@ class WidgetRepository(private val workInfoDao: WorkInfoDao) {
             }
         }
     }
-    
+
     /**
-     * Notifies all widgets that data has been updated
-     * Should be called after any work data modification
-     * 
-     * @param context Application context
-     */
-    suspend fun notifyDataUpdated(context: Context) = withContext(Dispatchers.Main) {
-        WidgetUpdateManager.notifyDataUpdated(context)
-    }
-    
-    /**
-     * Checks if the system is currently in dark mode
-     * 
-     * @param context Application context
-     * @return true if dark mode is active, false otherwise
-     */
-    fun isDarkMode(context: Context): Boolean {
-        val nightModeFlags = context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
-        return nightModeFlags == Configuration.UI_MODE_NIGHT_YES
-    }
-    
-    /**
-     * Forces widget update when theme changes with error handling
-     * Should be called when system theme changes are detected
-     * 
-     * @param context Application context
-     * @return WidgetResult indicating success or failure
-     */
-    suspend fun updateWidgetTheme(context: Context): WidgetErrorHandler.WidgetResult<Unit> = withContext(Dispatchers.Main) {
-        if (!::stateCache.isInitialized) {
-            initialize(context)
-        }
-        
-        errorHandler.executeWithRetry(
-            operation = {
-                val appWidgetManager = AppWidgetManager.getInstance(context)
-                val componentName = ComponentName(context, WorkTimeWidgetProvider::class.java)
-                val appWidgetIds = appWidgetManager.getAppWidgetIds(componentName)
-                
-                if (appWidgetIds.isNotEmpty()) {
-                    // Force update all widgets to apply new theme
-                    val widgetProvider = WorkTimeWidgetProvider()
-                    widgetProvider.onUpdate(context, appWidgetManager, appWidgetIds)
-                }
-            },
-            maxRetries = 1 // Single retry for theme updates
-        )
-    }
-    
-    /**
-     * Gets widget display state with comprehensive error handling and caching
-     * 
-     * @param context Application context
-     * @return WidgetResult containing display state or error information
+     * エラーハンドリングとキャッシュ機能を含む現在のウィジェット表示状態の取得
+     *
+     * @param context アプリケーションコンテキスト
+     * @return UI描画用のウィジェット表示状態
      */
     suspend fun getWidgetDisplayState(context: Context): WidgetErrorHandler.WidgetResult<WidgetDisplayState> = withContext(Dispatchers.IO) {
         if (!::stateCache.isInitialized) {
             initialize(context)
         }
 
-        val result = errorHandler.executeWithRetry(
+        errorHandler.executeWithRetry(
             operation = {
-                val todayWorkInfo = getTodayWorkInfoOrNull()
-                val dateFormatter = DateTimeFormatter.ofPattern("M/d")
-                val todayText = LocalDate.now().format(dateFormatter)
+                val today = LocalDate.now().format(dateFormatter)
+                val workInfo = workInfoRepository.getWorkInfoByDate(today)
 
-                // 現在時刻と計算結果をログ出力
-                val currentTime = java.time.LocalTime.now()
-                val optimalTime = TimeCalculationUtils.getCurrentRoundedTime()
-                Log.i("WidgetDebug", "現在時刻: $currentTime -> 計算結果: $optimalTime")
-
-                if (todayWorkInfo?.endTime != null) {
-                    // Has record state - show recorded end time
-                    Log.i("WidgetDebug", "記録済み状態: endTime=${todayWorkInfo.endTime}")
+                val displayState = if (workInfo?.endTime != null) {
+                    // 既存の記録がある場合
                     WidgetDisplayState(
-                        displayTime = todayWorkInfo.endTime,
-                        dateText = todayText,
+                        displayTime = workInfo.endTime,
+                        dateText = formatDateText(today),
                         hasRecord = true,
-                        buttonText = "記録済み"
+                        isError = false,
+                        errorMessage = null
                     )
                 } else {
-                    // No record state - show calculated optimal time
-                    Log.i("WidgetDebug", "未記録状態: 計算時間=$optimalTime")
+                    // 最適な時刻を計算
+                    val optimalTime = TimeCalculationUtils.getCurrentRoundedTime()
                     WidgetDisplayState(
                         displayTime = optimalTime,
-                        dateText = todayText,
+                        dateText = formatDateText(today),
                         hasRecord = false,
-                        buttonText = "Exit"
+                        isError = false,
+                        errorMessage = null
                     )
+                }
+
+                // 正常な状態をキャッシュ
+                stateCache.saveLastGoodState(displayState)
+                displayState
+            }
+        )
+    }
+
+    /**
+     * エラーハンドリングを含むウィジェットテーマの更新（設定変更用）
+     *
+     * @param context アプリケーションコンテキスト
+     * @return 成功または失敗を示すWidgetResult
+     */
+    suspend fun updateWidgetTheme(context: Context): WidgetErrorHandler.WidgetResult<Unit> = withContext(Dispatchers.Main) {
+        errorHandler.executeWithRetry(
+            operation = {
+                val appWidgetManager = AppWidgetManager.getInstance(context)
+                val componentName = ComponentName(context, WorkTimeWidgetProvider::class.java)
+                val appWidgetIds = appWidgetManager.getAppWidgetIds(componentName)
+
+                if (appWidgetIds.isNotEmpty()) {
+                    // プロバイダーを再作成してテーマ更新を強制実行
+                    val widgetProvider = WorkTimeWidgetProvider()
+                    widgetProvider.onUpdate(context, appWidgetManager, appWidgetIds)
                 }
             }
         )
+    }
 
-        // 結果をログ出力
-        when (result) {
-            is WidgetErrorHandler.WidgetResult.Success -> {
-                Log.i("WidgetDebug", "getWidgetDisplayState成功: ${result.data}")
-                stateCache.saveLastGoodState(result.data)
-                result
-            }
-            is WidgetErrorHandler.WidgetResult.Error -> {
-                Log.e("WidgetDebug", "getWidgetDisplayState失敗: ${result.error.message}")
-                val cachedState = stateCache.getLastGoodState()
-                if (errorHandler.shouldUseCachedState(result.error, cachedState)) {
-                    Log.i("WidgetDebug", "キャッシュ状態使用: $cachedState")
-                    WidgetErrorHandler.WidgetResult.Success(cachedState!!)
-                } else {
-                    result
-                }
-            }
+    /**
+     * メインアプリ統合のためのデータ更新通知
+     *
+     * @param context アプリケーションコンテキスト
+     */
+    suspend fun notifyDataUpdated(context: Context) {
+        updateWidget(context)
+    }
+
+    private fun formatDateText(dateString: String): String {
+        return try {
+            val date = LocalDate.parse(dateString, dateFormatter)
+            val formatter = DateTimeFormatter.ofPattern("M月d日")
+            date.format(formatter)
+        } catch (e: Exception) {
+            dateString
         }
     }
 }
+

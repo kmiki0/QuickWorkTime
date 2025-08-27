@@ -76,12 +76,52 @@ class WorkInfoRepository(private val dao: WorkInfoDao) {
 		}
 	}
 
-	// データを1件、削除処理
+	/** ============================================
+	 *  データ 1件を削除
+	 *  @param workInfo WorkInfo
+	 *  ============================================ */
 	suspend fun deleteWorkInfo(workInfo: WorkInfo) {
 		try {
 			dao.deleteWorkInfo(workInfo)
 		} catch (e: Exception) {
 			Log.d("DebugLog", "Error: ${e.message}")
+		}
+	}
+
+	/** ============================================
+	 *  ウィジェット用退勤記録メソッド
+	 *  @param time 退勤時刻 (HH:mm形式)
+	 *  @return Boolean 成功/失敗
+	 *  ============================================ */
+	suspend fun recordClockOutForWidget(time: String): Boolean {
+		return try {
+			val today = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"))
+			val existingWorkInfo = getWorkInfoByDate(today)
+
+			if (existingWorkInfo != null) {
+				// 既存データの場合は終了時間のみ更新
+				// calcWorkTime、calcBreakTimeは既存のロジックを使用
+				val updatedWorkInfo = existingWorkInfo.copy(endTime = time)
+				// 既存のinsertWorkInfoを使って計算処理も含めて更新
+				insertWorkInfo(updatedWorkInfo)
+			} else {
+				// 新規データの場合、デフォルト値で作成
+				val newWorkInfo = WorkInfo(
+					date = today,
+					startTime = "09:00", // デフォルト開始時間
+					endTime = time,
+					workingTime = "", // 自動計算
+					breakTime = "",   // 自動計算
+					isHoliday = false,
+					isNationalHoliday = false,
+					weekday = ""      // 自動設定
+				)
+				insertWorkInfo(newWorkInfo)
+			}
+			true
+		} catch (e: Exception) {
+			Log.e("WorkInfoRepository", "Error recording clock out for widget: ${e.message}")
+			false
 		}
 	}
 

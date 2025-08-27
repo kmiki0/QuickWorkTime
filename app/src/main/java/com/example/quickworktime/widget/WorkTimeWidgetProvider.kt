@@ -18,11 +18,16 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+/**
+ * ウィジェット表示状態データクラス
+ */
 data class WidgetDisplayState(
     val displayTime: String,
     val dateText: String,
     val hasRecord: Boolean,
-    val buttonText: String = "Exit"
+    val buttonText: String = "Exit",
+    val isError: Boolean = false,
+    val errorMessage: String? = null
 )
 
 /**
@@ -388,7 +393,7 @@ class WorkTimeWidgetProvider : AppWidgetProvider() {
                 // 退勤時間を記録
                 Log.i("WorkTimeWidgetProvider", "退勤時間記録中: $clockOutTime")
 
-                when (val recordResult = repository.recordClockOut(clockOutTime)) {
+                when (val recordResult = repository.recordClockOut(clockOutTime.toString())) {
                     is WidgetErrorHandler.WidgetResult.Success -> {
                         Log.i("WorkTimeWidgetProvider", "退勤記録成功")
                         // メインスレッドでウィジェット更新
