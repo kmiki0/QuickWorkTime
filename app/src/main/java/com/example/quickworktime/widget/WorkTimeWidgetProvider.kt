@@ -358,73 +358,78 @@ class WorkTimeWidgetProvider : AppWidgetProvider() {
      * 非同期で退勤時間を記録し、ウィジェットを更新
      */
     private fun handleClockOut(context: Context) {
-        Log.i("WidgetDebug", "handleClockOut 開始")
-        // Serviceを使わず、直接バックグラウンドで処理を実行
-        CoroutineScope(Dispatchers.IO).launch {
-            Log.i("WidgetDebug", "CoroutineScope 開始")
-            try {
-                val repository = WidgetRepository.create(context)
-                val errorHandler = WidgetErrorHandler()
 
-                // 最適な退勤時間を計算
-                val clockOutTime = repository.calculateOptimalClockOutTime()
+        Log.i("WorkTimeWidgetProvider", "退勤ボタンタップ - サービス開始")
+        // WidgetUpdateServiceを使用して退勤記録処理を実行
+        WidgetUpdateService.startClockOutRecording(context)
 
-                // 今日のレコードチェック
-                val todayRecordResult = repository.getTodayWorkInfo()
-                when (todayRecordResult) {
-                    is WidgetErrorHandler.WidgetResult.Success -> {
-                        val existingRecord = todayRecordResult.data
-
-                        if (existingRecord?.endTime != null) {
-                            // 既に記録済み、ウィジェット更新のみ
-                            Log.i("WorkTimeWidgetProvider", "今日は既に記録済み: ${existingRecord.endTime}")
-                            withContext(Dispatchers.Main) {
-                                updateAllWidgets(context)
-                            }
-                            return@launch
-                        }
-                    }
-                    is WidgetErrorHandler.WidgetResult.Error -> {
-                        Log.w("WorkTimeWidgetProvider", "既存レコードチェックエラー: ${todayRecordResult.error.message}")
-                        // エラーでも記録処理は続行
-                    }
-                }
-
-                // 退勤時間を記録
-                Log.i("WorkTimeWidgetProvider", "退勤時間記録中: $clockOutTime")
-
-                when (val recordResult = repository.recordClockOut(clockOutTime.toString())) {
-                    is WidgetErrorHandler.WidgetResult.Success -> {
-                        Log.i("WorkTimeWidgetProvider", "退勤記録成功")
-                        // メインスレッドでウィジェット更新
-                        withContext(Dispatchers.Main) {
-                            updateAllWidgets(context)
-                            // データ更新通知
-                            repository.notifyDataUpdated(context)
-                        }
-                    }
-                    is WidgetErrorHandler.WidgetResult.Error -> {
-                        Log.e("WorkTimeWidgetProvider", "退勤記録失敗: ${recordResult.error.message}")
-                        errorHandler.logError(context, recordResult.error, "退勤記録")
-                        // エラーでもウィジェット更新は試行
-                        withContext(Dispatchers.Main) {
-                            updateAllWidgets(context)
-                        }
-                    }
-                }
-
-            } catch (e: Exception) {
-                Log.e("WorkTimeWidgetProvider", "退勤処理中に予期しないエラー", e)
-                // エラーでもウィジェット更新は試行
-                try {
-                    withContext(Dispatchers.Main) {
-                        updateAllWidgets(context)
-                    }
-                } catch (updateException: Exception) {
-                    Log.e("WorkTimeWidgetProvider", "エラー後のウィジェット更新失敗", updateException)
-                }
-            }
-        }
+//        Log.i("WidgetDebug", "handleClockOut 開始")
+//        // Serviceを使わず、直接バックグラウンドで処理を実行
+//        CoroutineScope(Dispatchers.IO).launch {
+//            Log.i("WidgetDebug", "CoroutineScope 開始")
+//            try {
+//                val repository = WidgetRepository.create(context)
+//                val errorHandler = WidgetErrorHandler()
+//
+//                // 最適な退勤時間を計算
+//                val clockOutTime = repository.calculateOptimalClockOutTime()
+//
+//                // 今日のレコードチェック
+//                val todayRecordResult = repository.getTodayWorkInfo()
+//                when (todayRecordResult) {
+//                    is WidgetErrorHandler.WidgetResult.Success -> {
+//                        val existingRecord = todayRecordResult.data
+//
+//                        if (existingRecord?.endTime != null) {
+//                            // 既に記録済み、ウィジェット更新のみ
+//                            Log.i("WorkTimeWidgetProvider", "今日は既に記録済み: ${existingRecord.endTime}")
+//                            withContext(Dispatchers.Main) {
+//                                updateAllWidgets(context)
+//                            }
+//                            return@launch
+//                        }
+//                    }
+//                    is WidgetErrorHandler.WidgetResult.Error -> {
+//                        Log.w("WorkTimeWidgetProvider", "既存レコードチェックエラー: ${todayRecordResult.error.message}")
+//                        // エラーでも記録処理は続行
+//                    }
+//                }
+//
+//                // 退勤時間を記録
+//                Log.i("WorkTimeWidgetProvider", "退勤時間記録中: $clockOutTime")
+//
+//                when (val recordResult = repository.recordClockOut(clockOutTime.toString())) {
+//                    is WidgetErrorHandler.WidgetResult.Success -> {
+//                        Log.i("WorkTimeWidgetProvider", "退勤記録成功")
+//                        // メインスレッドでウィジェット更新
+//                        withContext(Dispatchers.Main) {
+//                            updateAllWidgets(context)
+//                            // データ更新通知
+//                            repository.notifyDataUpdated(context)
+//                        }
+//                    }
+//                    is WidgetErrorHandler.WidgetResult.Error -> {
+//                        Log.e("WorkTimeWidgetProvider", "退勤記録失敗: ${recordResult.error.message}")
+//                        errorHandler.logError(context, recordResult.error, "退勤記録")
+//                        // エラーでもウィジェット更新は試行
+//                        withContext(Dispatchers.Main) {
+//                            updateAllWidgets(context)
+//                        }
+//                    }
+//                }
+//
+//            } catch (e: Exception) {
+//                Log.e("WorkTimeWidgetProvider", "退勤処理中に予期しないエラー", e)
+//                // エラーでもウィジェット更新は試行
+//                try {
+//                    withContext(Dispatchers.Main) {
+//                        updateAllWidgets(context)
+//                    }
+//                } catch (updateException: Exception) {
+//                    Log.e("WorkTimeWidgetProvider", "エラー後のウィジェット更新失敗", updateException)
+//                }
+//            }
+//        }
     }
 
     /**

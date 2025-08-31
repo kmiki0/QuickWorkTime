@@ -43,6 +43,7 @@
         <!-- Widget Update Service -->
         <service
             android:name=".widget.WidgetUpdateService"
+            android:enabled="true"
             android:exported="false" />
 
         <!-- Widget Update Receiver for automatic updates -->

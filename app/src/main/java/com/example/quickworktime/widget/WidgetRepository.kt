@@ -117,6 +117,8 @@ class WidgetRepository(
             initialize(context)
         }
 
+        Log.d("DebugLog", "recordClockOut 開始")
+
         errorHandler.executeWithRetry(
             operation = {
                 val success = workInfoRepository.recordClockOutForWidget(time)

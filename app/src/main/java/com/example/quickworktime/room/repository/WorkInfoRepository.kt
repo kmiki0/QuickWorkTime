@@ -98,25 +98,36 @@ class WorkInfoRepository(private val dao: WorkInfoDao) {
 			val today = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"))
 			val existingWorkInfo = getWorkInfoByDate(today)
 
+
 			if (existingWorkInfo != null) {
-				// 既存データの場合は終了時間のみ更新
-				// calcWorkTime、calcBreakTimeは既存のロジックを使用
-				val updatedWorkInfo = existingWorkInfo.copy(endTime = time)
-				// 既存のinsertWorkInfoを使って計算処理も含めて更新
-				insertWorkInfo(updatedWorkInfo)
+				// 既存データの場合：終了時間を更新してUpdateを使用
+				val updatedWorkInfo = WorkInfo(
+					date = existingWorkInfo.date,
+					startTime = existingWorkInfo.startTime,
+					endTime = time, // 新しい終了時間
+					workingTime = calcWorkTime(existingWorkInfo.copy(endTime = time)), // 再計算
+					breakTime = calcBreakTime(existingWorkInfo.copy(endTime = time)),   // 再計算
+					isHoliday = existingWorkInfo.isHoliday,
+					isNationalHoliday = existingWorkInfo.isNationalHoliday,
+					weekday = existingWorkInfo.weekday
+				)
+				dao.updateWorkInfo(updatedWorkInfo)
+				Log.d("DebugLog", "ウィジェット：既存データを更新 - 日付: $today, 終了時間: $time")
 			} else {
-				// 新規データの場合、デフォルト値で作成
+				// 新規データの場合：デフォルト値でInsertを使用
 				val newWorkInfo = WorkInfo(
 					date = today,
 					startTime = "09:00", // デフォルト開始時間
 					endTime = time,
-					workingTime = "", // 自動計算
-					breakTime = "",   // 自動計算
+					workingTime = "", // insertWorkInfoで自動計算される（ダミー値）
+					breakTime = "",   // insertWorkInfoで自動計算される（ダミー値）
 					isHoliday = false,
 					isNationalHoliday = false,
-					weekday = ""      // 自動設定
+					weekday = ""      // insertWorkInfoで自動設定される（ダミー値）
 				)
+				// 既存のinsertWorkInfoメソッドを使用して正しい計算処理を実行
 				insertWorkInfo(newWorkInfo)
+				Log.d("DebugLog", "ウィジェット：新規データを挿入 - 日付: $today, 終了時間: $time")
 			}
 			true
 		} catch (e: Exception) {
