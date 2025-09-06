@@ -16,7 +16,7 @@ android {
         versionCode = 1
         versionName = "1.0"
 
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+//        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildFeatures{
@@ -60,7 +60,7 @@ dependencies {
     implementation(libs.androidx.navigation.ui.ktx)
 	implementation(libs.androidx.gridlayout)
 	implementation(libs.androidx.ui.desktop)
-	testImplementation(libs.junit)
+//	testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
 

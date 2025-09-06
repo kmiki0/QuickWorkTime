@@ -2,13 +2,10 @@ package com.example.quickworktime.ui.home
 import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
 import android.animation.ObjectAnimator
-import android.annotation.SuppressLint
+import androidx.fragment.app.Fragment
+import android.os.Bundle
 import android.transition.ChangeBounds
 import android.transition.TransitionManager
-import androidx.constraintlayout.widget.ConstraintSet
-import android.os.Bundle
-import android.os.Looper
-import android.util.Log
 import android.view.HapticFeedbackConstants
 import android.view.LayoutInflater
 import android.view.View
@@ -16,15 +13,12 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
-import androidx.fragment.app.Fragment
+import androidx.constraintlayout.widget.ConstraintSet
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.lifecycleScope
 import com.example.quickworktime.databinding.FragmentHomeBinding
 import com.example.quickworktime.room.WorkInfo
-import com.example.quickworktime.room.repository.WorkInfoRepository
 import com.example.quickworktime.utils.AnimationUtils
 import com.example.quickworktime.view.ParticleAnimationView
-import kotlinx.coroutines.CoroutineScope
 
 class HomeFragment : Fragment() {
 
