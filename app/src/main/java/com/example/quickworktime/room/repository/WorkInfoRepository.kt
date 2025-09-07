@@ -1,12 +1,18 @@
 package com.example.quickworktime.room.repository
 
 import android.util.Log
+import com.example.quickworktime.domain.usecase.*
 import com.example.quickworktime.room.WorkInfo
 import com.example.quickworktime.room.WorkInfoDao
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
+
 class WorkInfoRepository(private val dao: WorkInfoDao) {
+
+	// UseCaseインスタンス
+	private val calculateBreakTimeUseCase = CalculateBreakTimeUseCase()
+	private val calculateWorkTimeUseCase = CalculateWorkTimeUseCase()
 
 	/** ============================================
 	 *  データ 1件を登録
@@ -14,15 +20,28 @@ class WorkInfoRepository(private val dao: WorkInfoDao) {
 	 *  ============================================ */
 	suspend fun insertWorkInfo(workInfo: WorkInfo) {
 		try {
+			// UseCaseを使用して計算
+			val breakTime = calculateBreakTimeUseCase.execute(
+				CalculateBreakTimeParams(workInfo.endTime)
+			)
+
+			val workingTime = calculateWorkTimeUseCase.execute(
+				CalculateWorkTimeParams(
+					startTime = workInfo.startTime,
+					endTime = workInfo.endTime,
+					breakTime = breakTime
+				)
+			)
+
 			// 作業情報を登録
 			val insertData = WorkInfo(
-				workInfo.date, 			  // 日付
-				workInfo.startTime, 	  // 開始時間
-				workInfo.endTime, 		  // 終了時間
-				calcWorkTime(workInfo),   // 作業時間
-				calcBreakTime(workInfo),  // 休憩時間
-				false,		  // 休日フラグ
-				false,  // 祝日フラグ
+				workInfo.date,           // 日付
+				workInfo.startTime,      // 開始時間
+				workInfo.endTime,        // 終了時間
+				workingTime,             // 作業時間（UseCase計算）
+				breakTime,               // 休憩時間（UseCase計算）
+				false,                   // 休日フラグ
+				false,                   // 祝日フラグ
 				getWeekday(workInfo.date) // 曜日(英語)
 			)
 			dao.insertWorkInfo(insertData)
@@ -91,32 +110,43 @@ class WorkInfoRepository(private val dao: WorkInfoDao) {
 	 *  @param time 退勤時刻 (HH:mm形式)
 	 *  @return Boolean 成功/失敗
 	 *  ============================================ */
-	suspend fun recordClockOutForWidget(time: String): Boolean {
+	suspend fun recordClockOutForWidget(endTime: String): Boolean {
 		return try {
 			val today = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"))
 			val existingWorkInfo = getWorkInfoByDate(today)
 
-
 			if (existingWorkInfo != null) {
+				// UseCaseを使用して計算
+				val breakTime = calculateBreakTimeUseCase.execute(
+					CalculateBreakTimeParams(endTime)
+				)
+				val workingTime = calculateWorkTimeUseCase.execute(
+					CalculateWorkTimeParams(
+						startTime = existingWorkInfo.startTime,
+						endTime = endTime,
+						breakTime = breakTime
+					)
+				)
+
 				// 既存データの場合：終了時間を更新してUpdateを使用
 				val updatedWorkInfo = WorkInfo(
 					date = existingWorkInfo.date,
 					startTime = existingWorkInfo.startTime,
-					endTime = time, // 新しい終了時間
-					workingTime = calcWorkTime(existingWorkInfo.copy(endTime = time)), // 再計算
-					breakTime = calcBreakTime(existingWorkInfo.copy(endTime = time)),   // 再計算
+					endTime = endTime,
+					workingTime = workingTime,
+					breakTime = breakTime,
 					isHoliday = existingWorkInfo.isHoliday,
 					isNationalHoliday = existingWorkInfo.isNationalHoliday,
 					weekday = existingWorkInfo.weekday
 				)
 				dao.updateWorkInfo(updatedWorkInfo)
-				Log.d("DebugLog", "ウィジェット：既存データを更新 - 日付: $today, 終了時間: $time")
+				Log.d("DebugLog", "ウィジェット：既存データを更新 - 日付: $today, 終了時間: $endTime")
 			} else {
 				// 新規データの場合：デフォルト値でInsertを使用
 				val newWorkInfo = WorkInfo(
 					date = today,
 					startTime = "09:00", // デフォルト開始時間
-					endTime = time,
+					endTime = endTime,
 					workingTime = "", // insertWorkInfoで自動計算される（ダミー値）
 					breakTime = "",   // insertWorkInfoで自動計算される（ダミー値）
 					isHoliday = false,
@@ -125,56 +155,12 @@ class WorkInfoRepository(private val dao: WorkInfoDao) {
 				)
 				// 既存のinsertWorkInfoメソッドを使用して正しい計算処理を実行
 				insertWorkInfo(newWorkInfo)
-				Log.d("DebugLog", "ウィジェット：新規データを挿入 - 日付: $today, 終了時間: $time")
+				Log.d("DebugLog", "ウィジェット：新規データを挿入 - 日付: $today, 終了時間: $endTime")
 			}
 			true
 		} catch (e: Exception) {
 			Log.e("WorkInfoRepository", "Error recording clock out for widget: ${e.message}")
 			false
-		}
-	}
-
-	// 休憩時間を計算
-	fun calcWorkTime(workInfo: WorkInfo) : String {
-		val startHH = workInfo.startTime.split(":")[0].toInt()
-		val startMM = workInfo.startTime.split(":")[1].toInt()
-		val endHH = workInfo.endTime.split(":")[0].toInt()
-		val endMM = workInfo.endTime.split(":")[1].toInt()
-
-		// 休憩時間を計算
-		val breSplit = calcBreakTime(workInfo).split(":")
-		val breakTime: Float = (breSplit[0].toInt() * 60 + breSplit[1].toInt()).toFloat()
-
-		// 作業時間を計算
-		val calcTime: Float = (((endHH * 60 + endMM) - (startHH * 60 + startMM) - breakTime) / 60)
-
-		// 作業時間を "HH:mm" 形式に変換
-		val calcSplit = truncateToTwoDecimalPlaces(calcTime).toString().split(".")
-		return calcSplit[0] + ":" + calcSplit[1].padStart(2, '0')
-	}
-
-	fun calcBreakTime(workInfo: WorkInfo) : String {
-		val endHH = workInfo.endTime.split(":")[0]
-		val endMM = workInfo.endTime.split(":")[1]
-
-		// endHH が 12時以内の場合、0時間
-		if (endHH <= "12") {
-			return "00:00"
-		}else if (endHH + endMM <= "1730") {
-			return "00:45"
-		} else {
-			return "01:00"
-		}
-	}
-
-	private fun truncateToTwoDecimalPlaces(value: Float): Float {
-		val strValue = value.toString()
-		val decimalIndex = strValue.indexOf('.')
-
-		return if (decimalIndex != -1 && strValue.length - decimalIndex - 1 > 2) {
-			strValue.substring(0, decimalIndex + 3).toFloat()
-		} else {
-			value
 		}
 	}
 
