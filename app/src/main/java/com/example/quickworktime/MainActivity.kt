@@ -1,15 +1,13 @@
 package com.example.quickworktime
 
+//import androidx.navigation.ui.setupActionBarWithNavController
 import android.graphics.Color
 import android.os.Bundle
-import com.google.android.material.bottomnavigation.BottomNavigationView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.navigation.findNavController
-import androidx.navigation.ui.AppBarConfiguration
-import androidx.navigation.ui.setupActionBarWithNavController
-//import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
 import com.example.quickworktime.databinding.ActivityMainBinding
+import com.google.android.material.bottomnavigation.BottomNavigationView
 
 class MainActivity : AppCompatActivity() {
 
@@ -34,5 +32,7 @@ class MainActivity : AppCompatActivity() {
 
         val colorWithAlpha = Color.argb(77, 255, 255, 255) // 30%透明の白 (#4DFFFFFF)
         navView.setBackgroundColor(colorWithAlpha)
+
     }
+
 }

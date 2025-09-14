@@ -1,14 +1,18 @@
 package com.example.quickworktime.ui.home
 
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.lifecycleScope
 import com.example.quickworktime.databinding.FragmentHomeBinding
 import com.example.quickworktime.ui.home.animation.HomeAnimationController
 import com.example.quickworktime.ui.home.input.TimeInputHandler
+import com.example.quickworktime.ui.home.test.Test
+import kotlinx.coroutines.launch
 
 class HomeFragment : Fragment() {
 
@@ -23,6 +27,11 @@ class HomeFragment : Fragment() {
 
     // 時間入力ハンドラー
     private lateinit var timeInputHandler: TimeInputHandler
+
+    private val testClass: Test by lazy {
+        Test()
+    }
+
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -64,6 +73,32 @@ class HomeFragment : Fragment() {
 
         // 時間テキストのクリックリスナーを設定
         timeInputHandler.setupTimeTextClickListeners()
+
+        // テストコード
+        executeStep3Tests()
+    }
+
+    /**
+     * Phase 2 Step 3 テスト実行メソッド
+     */
+    private fun executeStep3Tests() {
+        lifecycleScope.launch {
+            try {
+                Log.d("Step3Test", "=== Phase 2 Step 3 テスト開始 ===")
+
+                // 1. UseCase個別テスト（Contextなしで実行可能）
+                testClass.quickUseCaseTest()
+
+                // 2. Repository統合テスト（Context必要）
+                // ✅ requireContext() を使用
+                testClass.testRepositoryIntegrationWithContext(requireContext())
+
+                Log.d("Step3Test", "=== Phase 2 Step 3 テスト完了 ===")
+
+            } catch (e: Exception) {
+                Log.e("Step3Test", "テストエラー: ${e.message}", e)
+            }
+        }
     }
 
     private fun setDisplayByArgument() {

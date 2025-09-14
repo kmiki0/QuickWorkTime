@@ -19,7 +19,7 @@ data class CalculateBreakTimeParams(
 )
 
 /**
- * 勤務時間記録パラメータ (Step 3で追加)
+ * 勤務時間記録パラメータ
  */
 data class RecordWorkTimeParams(
 	val date: String,       // yyyyMMdd形式
@@ -28,7 +28,7 @@ data class RecordWorkTimeParams(
 )
 
 /**
- * ウィジェット用退勤記録パラメータ (Step 3で追加)
+ * ウィジェット用退勤記録パラメータ
  */
 data class RecordClockOutParams(
 	val clockOutTime: String,              // HH:mm形式 - 記録したい退勤時間
