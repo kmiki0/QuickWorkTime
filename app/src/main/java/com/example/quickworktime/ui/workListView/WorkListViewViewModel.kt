@@ -6,6 +6,10 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
+import com.example.quickworktime.domain.usecase.CalculateBreakTimeUseCase
+import com.example.quickworktime.domain.usecase.CalculateWorkTimeUseCase
+import com.example.quickworktime.domain.usecase.RecordWorkTimeParams
+import com.example.quickworktime.domain.usecase.RecordWorkTimeUseCase
 import com.example.quickworktime.room.AppDatabase
 import com.example.quickworktime.room.WorkInfo
 import com.example.quickworktime.room.WorkSetting
@@ -31,6 +35,14 @@ class WorkListViewViewModel(application: Application) : AndroidViewModel(applica
     private val db = AppDatabase.getDatabase(application)
     private val infoRepo: WorkInfoRepository = WorkInfoRepository(db.workInfo())
     private val settingRepo: WorkSettingRepository = WorkSettingRepository(db.workSetting())
+
+    // UseCase層のインスタンス
+    private val calculateBreakTimeUseCase = CalculateBreakTimeUseCase()
+    private val calculateWorkTimeUseCase = CalculateWorkTimeUseCase()
+    private val recordWorkTimeUseCase = RecordWorkTimeUseCase(
+        calculateBreakTimeUseCase = calculateBreakTimeUseCase,
+        calculateWorkTimeUseCase = calculateWorkTimeUseCase
+    )
 
     // リストデータ
     private val _listData = MutableLiveData<List<WorkInfo>>()
@@ -114,19 +126,19 @@ class WorkListViewViewModel(application: Application) : AndroidViewModel(applica
                 workSetting = defaultData
             }
 
-            // WorkInfoにデータを登録
-            val newWorkInfo = WorkInfo(
-                date = date,
-                startTime = workSetting.defaultStartTime,
-                endTime = workSetting.defaultEndTime,
-                workingTime = "",
-                breakTime = "",
-                isHoliday = false,
-                isNationalHoliday = false,
-                weekday = ""
+            // UseCase層で完全なWorkInfoを作成
+            val completeWorkInfo = recordWorkTimeUseCase.execute(
+                RecordWorkTimeParams(
+                    date = date,
+                    startTime = workSetting.defaultStartTime,
+                    endTime = workSetting.defaultEndTime
+                )
             )
 
-            infoRepo.insertWorkInfo(newWorkInfo)
+            // Repositoryの純粋なデータアクセスメソッドを使用
+            infoRepo.insertWorkInfoDirect(completeWorkInfo)
+
+            Log.d("WorkListViewViewModel", "新規WorkInfo作成成功 - UseCase直接呼び出し: $date")
         } catch (e: Exception) {
             Log.e("WorkListViewViewModel", "Error creating new work info for $date", e)
         }

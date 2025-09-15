@@ -150,6 +150,19 @@ class WorkInfoRepository(private val dao: WorkInfoDao) {
 	}
 
 	/** ============================================
+	 *  勤務情報を直接登録
+	 *  @param workInfo WorkInfo
+	 *  ============================================ */
+	suspend fun insertWorkInfoDirect(workInfo: WorkInfo) {
+		try {
+			dao.insertWorkInfo(workInfo)
+		} catch (e: Exception) {
+			Log.e("WorkInfoRepository", "直接登録エラー: ${e.message}", e)
+			throw e
+		}
+	}
+
+	/** ============================================
 	 *  データ 1件を削除
 	 *  @param workInfo WorkInfo
 	 *  ============================================ */

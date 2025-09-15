@@ -75,28 +75,27 @@ class HomeFragment : Fragment() {
         timeInputHandler.setupTimeTextClickListeners()
 
         // テストコード
-        executeStep3Tests()
+//        executeStep4Tests()
     }
 
     /**
-     * Phase 2 Step 3 テスト実行メソッド
+     * Phase 2 Step 4 テスト実行メソッド
      */
-    private fun executeStep3Tests() {
+    private fun executeStep4Tests() {
         lifecycleScope.launch {
             try {
-                Log.d("Step3Test", "=== Phase 2 Step 3 テスト開始 ===")
+                val testClass = Test()
 
-                // 1. UseCase個別テスト（Contextなしで実行可能）
+                // 1. UseCase個別テスト（Step 3と同じ、動作確認）
                 testClass.quickUseCaseTest()
 
-                // 2. Repository統合テスト（Context必要）
-                // ✅ requireContext() を使用
+                // 2. Repository統合テスト（Step 3と同じ、既存機能確認）
                 testClass.testRepositoryIntegrationWithContext(requireContext())
 
-                Log.d("Step3Test", "=== Phase 2 Step 3 テスト完了 ===")
+                Log.d("Step4Test", "=== Phase 2 Step 4 HomeViewModel動作確認完了 ===")
 
             } catch (e: Exception) {
-                Log.e("Step3Test", "テストエラー: ${e.message}", e)
+                Log.e("Step4Test", "テストエラー: ${e.message}", e)
             }
         }
     }

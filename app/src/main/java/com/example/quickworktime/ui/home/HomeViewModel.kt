@@ -1,18 +1,22 @@
 package com.example.quickworktime.ui.home
 
 import android.app.Application
+import android.util.Log
 import android.widget.TextView
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
+import com.example.quickworktime.domain.usecase.CalculateBreakTimeUseCase
+import com.example.quickworktime.domain.usecase.CalculateWorkTimeUseCase
+import com.example.quickworktime.domain.usecase.RecordWorkTimeParams
+import com.example.quickworktime.domain.usecase.RecordWorkTimeUseCase
 import com.example.quickworktime.room.AppDatabase
 import com.example.quickworktime.room.WorkInfo
 import com.example.quickworktime.room.WorkInfoDao
 import com.example.quickworktime.room.WorkSetting
 import com.example.quickworktime.room.repository.WorkInfoRepository
 import com.example.quickworktime.room.repository.WorkSettingRepository
-import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -25,6 +29,14 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         START,   // 開始時間 (START)
         END,     // 終了時間 (END)
     }
+
+    // === UseCase層のインスタンス作成（クラス内に追加）===
+    private val calculateBreakTimeUseCase = CalculateBreakTimeUseCase()
+    private val calculateWorkTimeUseCase = CalculateWorkTimeUseCase()
+    private val recordWorkTimeUseCase = RecordWorkTimeUseCase(
+        calculateBreakTimeUseCase = calculateBreakTimeUseCase,
+        calculateWorkTimeUseCase = calculateWorkTimeUseCase
+    )
 
     // データベース
     private val db = AppDatabase.getDatabase(application)
@@ -51,7 +63,6 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     fun setActiveTextView(activeTextView: TextView) {
         _activeTextView.value = activeTextView
     }
-
 
     // ----------------------------------------
     // 画面項目 (Data Binding)
@@ -259,10 +270,26 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    // データ登録
+    // データ登録 （UseCase直接呼び出し）
     fun insertWorkInfo(workInfo: WorkInfo) {
         viewModelScope.launch {
-            repo.insertWorkInfo(workInfo)
+            try {
+                // UseCase層で完全なWorkInfoを作成
+                val completeWorkInfo = recordWorkTimeUseCase.execute(
+                    RecordWorkTimeParams(
+                        date = workInfo.date,
+                        startTime = workInfo.startTime,
+                        endTime = workInfo.endTime
+                    )
+                )
+
+                // Repositoryの純粋なデータアクセスメソッドを使用
+                repo.insertWorkInfoDirect(completeWorkInfo)
+
+            } catch (e: Exception) {
+                Log.e("HomeViewModel", "勤務情報登録エラー: ${e.message}", e)
+                // エラーハンドリング（必要に応じてUI更新）
+            }
         }
     }
 
