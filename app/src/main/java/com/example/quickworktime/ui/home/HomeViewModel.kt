@@ -51,6 +51,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     // アクティブ状態を保持するLiveData
     private val _activeTextState = MutableLiveData<ActiveText>()
     val activeTextState: LiveData<ActiveText> = _activeTextState
+
     // 状態を更新する関数
     fun updateActiveTextState(activeText: ActiveText) {
         _activeTextState.value = activeText
@@ -292,6 +293,4 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
     }
-
-
 }

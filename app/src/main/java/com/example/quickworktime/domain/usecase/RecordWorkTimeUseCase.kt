@@ -6,6 +6,10 @@ import java.time.format.DateTimeFormatter
 
 /**
  * 勤務時間記録UseCase
+ * 最低限のパラメータ(これ以外は自動計算)
+ * 	- date: yyyyMMdd形式の日付
+ * 	- startTime: HH:mm形式の開始時間
+ * 	- endTime: HH:mm形式の終了時間
  * 勤務情報の登録における複合処理を担当
  * - 休憩時間の自動計算
  * - 勤務時間の自動計算

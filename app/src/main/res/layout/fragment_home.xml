@@ -321,9 +321,9 @@
             app:layout_constraintStart_toStartOf="@+id/fab_main"
             app:layout_constraintTop_toTopOf="@+id/fab_main" />
 
-        <!-- サブFAB2: Add Alarm（左上45度に展開） -->
+        <!-- サブFAB2: Add DelDay（左上45度に展開） -->
         <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/fab_add_alarm"
+            android:id="@+id/fab_del_day"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:src="@drawable/ic_calendar_white_24dp"
@@ -336,9 +336,9 @@
             app:layout_constraintStart_toStartOf="@+id/fab_main"
             app:layout_constraintTop_toTopOf="@+id/fab_main" />
 
-        <!-- サブFAB3: Add Person（上に展開） -->
+        <!-- サブFAB3: Add Setting（上に展開） -->
         <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/fab_add_person"
+            android:id="@+id/fab_setting"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:src="@drawable/ic_setting_white_24dp"
@@ -369,16 +369,16 @@
             app:layout_constraintStart_toStartOf="@+id/fab_main"
             app:layout_constraintTop_toTopOf="@+id/fab_main" />
 
-        <!-- ラベル2: Add Alarm -->
+        <!-- ラベル2: 削除 -->
         <TextView
-            android:id="@+id/label_add_alarm"
+            android:id="@+id/label_del_day"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:background="@drawable/fab_label_background"
             android:fontFamily="@font/jersey10_regular"
             android:paddingHorizontal="12dp"
             android:paddingVertical="6dp"
-            android:text="一覧画面"
+            android:text="削除"
             android:textColor="@color/white"
             android:textSize="14sp"
             android:visibility="gone"
@@ -389,14 +389,14 @@
 
         <!-- ラベル3: 設定 -->
         <TextView
-            android:id="@+id/label_add_person"
+            android:id="@+id/label_setting"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:background="@drawable/fab_label_background"
             android:fontFamily="@font/jersey10_regular"
             android:paddingHorizontal="12dp"
             android:paddingVertical="6dp"
-            android:text=""
+            android:text="設定"
             android:textColor="@color/white"
             android:textSize="14sp"
             android:visibility="gone"
