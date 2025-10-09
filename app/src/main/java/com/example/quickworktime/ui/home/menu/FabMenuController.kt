@@ -32,6 +32,7 @@ class FabMenuController(
 		// アニメーション定数
 		private const val ANIMATION_DURATION = 300L
 		private const val FAB_SPACING = 180f  // FAB間の距離（dp相当）
+		private const val LABEL_MARGIN = 120f     // ラベルとFABの間隔（この値を調整）
 	}
 
 	/**
@@ -47,27 +48,33 @@ class FabMenuController(
 	* サブFABの初期位置を設定（すべて非表示状態）
 	*/
 	private fun initializeFabPositions() {
-		binding.fabNewDay.visibility = View.GONE
-		binding.fabDelDay.visibility = View.GONE
-		binding.fabSetting.visibility = View.GONE
+		// postを使用してビューが完全に初期化された後に実行
+		binding.fabNewDay.post {
+			binding.fabNewDay.visibility = View.GONE
+			binding.fabDelDay.visibility = View.GONE
+			binding.fabSetting.visibility = View.GONE
 
-		binding.labelNewDay?.visibility = View.GONE
-		binding.labelDelDay?.visibility = View.GONE
-		binding.labelSetting?.visibility = View.GONE
+			binding.labelNewDay?.visibility = View.GONE
+			binding.labelDelDay?.visibility = View.GONE
+			binding.labelSetting?.visibility = View.GONE
 
-		// 初期状態では全てメインFABと同じ位置に配置
-		binding.fabNewDay.translationY = 0f
-		binding.fabNewDay.translationX = 0f
-		binding.fabDelDay.translationY = 0f
-		binding.fabDelDay.translationX = 0f
-		binding.fabSetting.translationY = 0f
-		binding.fabSetting.translationX = 0f
+			// 初期状態では全てメインFABと同じ位置に配置
+			listOf(binding.fabNewDay, binding.fabDelDay, binding.fabSetting).forEach { fab ->
+				fab.translationY = 0f
+				fab.translationX = 0f
+				fab.alpha = 0f
+				fab.scaleX = 0f
+				fab.scaleY = 0f
+			}
 
-		// 初期アルファ値とスケールを設定
-		listOf(binding.fabNewDay, binding.fabDelDay, binding.fabSetting).forEach { fab ->
-			fab.alpha = 0f
-			fab.scaleX = 0f
-			fab.scaleY = 0f
+			// ラベルも初期化
+			listOf(binding.labelNewDay, binding.labelDelDay, binding.labelSetting).forEach { label ->
+				label?.let {
+					it.translationY = 0f
+					it.translationX = 0f
+					it.alpha = 0f
+				}
+			}
 		}
 	}
 
@@ -107,74 +114,150 @@ class FabMenuController(
 		isFabMenuOpen = !isFabMenuOpen
 
 		if (isFabMenuOpen) {
-			showFabMenu()
+			showFabMenuWithAnimation()
 		} else {
-			hideFabMenu()
+			hideFabMenuWithAnimation()
 		}
 	}
 
 	/**
-	 * FABメニューを展開
+	 * FABメニューをアニメーション付きで展開
 	 */
-	private fun showFabMenu() {
-		// サブFABを表示
-		binding.fabNewDay.visibility = View.VISIBLE
-		binding.fabDelDay.visibility = View.VISIBLE
-		binding.fabSetting.visibility = View.VISIBLE
+	private fun showFabMenuWithAnimation() {
+		// アニメーション開始前に初期状態を確実に設定
+		listOf(binding.fabNewDay, binding.fabDelDay, binding.fabSetting).forEach { fab ->
+			fab.visibility = View.VISIBLE
+			fab.alpha = 0f
+			fab.scaleX = 0f
+			fab.scaleY = 0f
+			fab.translationX = 0f
+			fab.translationY = 0f
+		}
 
-		// ラベルを表示（XMLにラベルがある場合）
-		binding.labelNewDay?.visibility = View.VISIBLE
-		binding.labelDelDay?.visibility = View.VISIBLE
-		binding.labelSetting?.visibility = View.VISIBLE
+		// ラベルも初期状態を設定
+		listOf(binding.labelNewDay, binding.labelDelDay, binding.labelSetting).forEach { label ->
+			label?.let {
+				it.visibility = View.VISIBLE
+				it.alpha = 0f
+				it.translationX = 0f
+				it.translationY = 0f
+			}
+		}
 
-		// メインFABのアイコンを変更（×印）
-		binding.fabMain.setImageResource(android.R.drawable.ic_menu_close_clear_cancel)
-	}
-
-	/**
-	 * FABメニューを収納
-	 */
-	private fun hideFabMenu() {
-		// サブFABを非表示
-		binding.fabNewDay.visibility = View.GONE
-		binding.fabDelDay.visibility = View.GONE
-		binding.fabSetting.visibility = View.GONE
-
-		// ラベルを非表示
-		binding.labelNewDay?.visibility = View.GONE
-		binding.labelDelDay?.visibility = View.GONE
-		binding.labelSetting?.visibility = View.GONE
+//		// fabSettingのラベルは非表示のまま
+//		binding.labelSetting?.visibility = View.GONE
 
 		// メインFABの回転アニメーション
 		animateMainFabRotation(45f)
 
-		// サブFABのアニメーション
-		animateSubFabExpansion(
+		// サブFABのアニメーション（左）- ラベルはさらに左側
+		animateSubFabExpansionWithLabel(
 			fab = binding.fabNewDay,
 			label = binding.labelNewDay,
-			translationX = -FAB_SPACING,
-			translationY = 0f,
+			fabTranslationX = -FAB_SPACING,
+			fabTranslationY = 0f,
+			labelPosition = LabelPosition.LEFT,
 			delay = 0L
 		)
 
-		animateSubFabExpansion(
+		// サブFABのアニメーション（左上45度）- ラベルは左側
+		animateSubFabExpansionWithLabel(
 			fab = binding.fabDelDay,
 			label = binding.labelDelDay,
-			translationX = -FAB_SPACING * 0.7f,
-			translationY = -FAB_SPACING * 0.7f,
+			fabTranslationX = -FAB_SPACING * 0.7f,
+			fabTranslationY = -FAB_SPACING * 0.7f,
+			labelPosition = LabelPosition.LEFT,
 			delay = 50L
 		)
 
-		animateSubFabExpansion(
+		// サブFABのアニメーション（上）- ラベルは左側
+		animateSubFabExpansionWithLabel(
 			fab = binding.fabSetting,
-			label = binding.labelSetting,
-			translationX = 0f,
-			translationY = -FAB_SPACING,
+			label = null,
+			fabTranslationX = 0f,
+			fabTranslationY = -FAB_SPACING,
+			labelPosition = LabelPosition.TOP,
 			delay = 100L
 		)
 
-		// メインFABのアイコンを元に戻す（+印）
-		binding.fabMain.setImageResource(android.R.drawable.ic_input_add)
+		// メインFABのアイコンを変更
+		binding.fabMain.setImageResource(android.R.drawable.ic_menu_close_clear_cancel)
+	}
+
+	/**
+	 * ラベルの位置パターン
+	 */
+	private enum class LabelPosition {
+		LEFT,           // FABの左側
+		TOP             // FABの上
+	}
+
+	/**
+	 * サブFABとラベルを同時に展開
+	 */
+	private fun animateSubFabExpansionWithLabel(
+		fab: View,
+		label: View?,
+		fabTranslationX: Float,
+		fabTranslationY: Float,
+		labelPosition: LabelPosition,
+		delay: Long
+	) {
+		// FABのアニメーション
+		val translateX = ObjectAnimator.ofFloat(fab, "translationX", 0f, fabTranslationX)
+		val translateY = ObjectAnimator.ofFloat(fab, "translationY", 0f, fabTranslationY)
+		val fadeIn = ObjectAnimator.ofFloat(fab, "alpha", 0f, 1f)
+		val scaleX = ObjectAnimator.ofFloat(fab, "scaleX", 0f, 1f)
+		val scaleY = ObjectAnimator.ofFloat(fab, "scaleY", 0f, 1f)
+
+		AnimatorSet().apply {
+			playTogether(translateX, translateY, fadeIn, scaleX, scaleY)
+			duration = ANIMATION_DURATION
+			startDelay = delay
+			interpolator = OvershootInterpolator()
+			start()
+		}
+
+		// ラベルのアニメーション
+		label?.let {
+			animateLabelWithPosition(it, fabTranslationX, fabTranslationY, labelPosition, delay)
+		}
+	}
+
+	/**
+	 * ラベルの展開アニメーション（位置指定版）
+	 */
+	private fun animateLabelWithPosition(
+		label: View,
+		fabTranslationX: Float,
+		fabTranslationY: Float,
+		labelPosition: LabelPosition,
+		delay: Long
+	) {
+		val labelMargin = LABEL_MARGIN  // ラベルとFABの間のマージン
+
+		// 位置パターンに応じてラベルの座標を計算
+		val (labelX, labelY) = when (labelPosition) {
+			LabelPosition.LEFT -> {
+				// FABの左側
+				Pair(fabTranslationX - labelMargin, fabTranslationY)
+			}
+			LabelPosition.TOP -> {
+				// FABの上
+				Pair(fabTranslationX, fabTranslationY - labelMargin)
+			}
+		}
+
+		val translateX = ObjectAnimator.ofFloat(label, "translationX", 0f, labelX)
+		val translateY = ObjectAnimator.ofFloat(label, "translationY", 0f, labelY)
+		val fadeIn = ObjectAnimator.ofFloat(label, "alpha", 0f, 1f)
+
+		AnimatorSet().apply {
+			playTogether(translateX, translateY, fadeIn)
+			duration = ANIMATION_DURATION
+			startDelay = delay + 50L  // FABより少し遅れて表示
+			start()
+		}
 	}
 
 	/**
@@ -187,7 +270,7 @@ class FabMenuController(
 		// サブFABの収納アニメーション
 		animateSubFabCollapse(binding.fabNewDay, binding.labelNewDay, 0L)
 		animateSubFabCollapse(binding.fabDelDay, binding.labelDelDay, 50L)
-		animateSubFabCollapse(binding.fabSetting, binding.labelSetting, 100L)
+		animateSubFabCollapse(binding.fabSetting, null, 100L)
 
 		// メインFABのアイコンを元に戻す
 		binding.fabMain.setImageResource(android.R.drawable.ic_input_add)
@@ -341,7 +424,7 @@ class FabMenuController(
 		showToast("新規データを作成しました")
 
 		// FABメニューを閉じる
-		hideFabMenu()
+		hideFabMenuWithAnimation()
 	}
 
 	/**
@@ -409,7 +492,7 @@ class FabMenuController(
 		// fragment.startActivity(intent)
 
 		showToast("設定画面への遷移（未実装）")
-		hideFabMenu()
+		hideFabMenuWithAnimation()
 	}
 
 	/**
@@ -425,7 +508,7 @@ class FabMenuController(
 	 */
 	fun closeFabMenuIfOpen(): Boolean {
 		return if (isFabMenuOpen) {
-			hideFabMenu()
+			hideFabMenuWithAnimation()
 			true
 		} else {
 			false

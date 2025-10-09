@@ -90,24 +90,6 @@ class HomeFragment : Fragment() {
         vm.getDisplayData(date ?: "")
     }
 
-    // FABメニュー
-    private fun setupFabMenu() {
-        binding.fabMain.setOnClickListener {
-        }
-
-        // 新規作成
-        binding.fabNewDay.setOnClickListener {
-        }
-
-        // 削除
-        binding.fabDelDay.setOnClickListener {
-        }
-
-        // 設定
-        binding.fabSetting.setOnClickListener {
-        }
-    }
-
     override fun onResume() {
         super.onResume()
         val date: String? = arguments?.getString("date")

@@ -360,7 +360,7 @@
             android:fontFamily="@font/jersey10_regular"
             android:paddingHorizontal="12dp"
             android:paddingVertical="6dp"
-            android:text="新規追加"
+            android:text="追加"
             android:textColor="@color/white"
             android:textSize="14sp"
             android:visibility="gone"
