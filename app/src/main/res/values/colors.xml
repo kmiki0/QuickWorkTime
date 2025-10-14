@@ -11,7 +11,6 @@
 <color name="base_background_color">#2B2E37</color>
 <color name="status_bar">#2D2F2F</color>
 <color name="transparent">#00FFFFFF</color>
-<!-- 修正：ボタンの色を既存のCustomButtonと統一 -->
 <color name="button_disabled">#FFB0B0B0</color>
 <color name="button_normal">#373B46</color> <!-- CustomButtonと同じ色に変更 -->
 </resources>

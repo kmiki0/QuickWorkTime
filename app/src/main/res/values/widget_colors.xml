@@ -12,4 +12,8 @@
     <!-- Additional theme-aware colors -->
     <color name="widget_accent_light">@color/purple_500</color>
     <color name="widget_surface_light">#F5F5F5</color>
+
+    <!-- StackView card colors -->
+    <color name="widget_card_background">#EEEEEE</color>
+    <color name="widget_card_text_inactive">#999999</color>
 </resources>
