@@ -33,6 +33,7 @@ class WidgetStateCache(private val context: Context) {
                 put("dateText", state.dateText)
                 put("hasRecord", state.hasRecord)
                 put("buttonText", state.buttonText)
+                put("is_adjusted", state.isAdjusted)
             }
             
             prefs.edit()
@@ -64,7 +65,8 @@ class WidgetStateCache(private val context: Context) {
                 displayTime = json.getString("displayTime"),
                 dateText = json.getString("dateText"),
                 hasRecord = json.getBoolean("hasRecord"),
-                buttonText = json.getString("buttonText")
+                buttonText = json.getString("buttonText"),
+                isAdjusted = json.getBoolean("is_adjusted")
             )
         } catch (e: Exception) {
             // Return null if cache is corrupted or invalid
@@ -75,12 +77,9 @@ class WidgetStateCache(private val context: Context) {
     /**
      * Clears the cached state
      */
-    suspend fun clearCache() = withContext(Dispatchers.IO) {
+    fun clearCache() {
         try {
-            prefs.edit()
-                .remove(KEY_LAST_GOOD_STATE)
-                .remove(KEY_LAST_UPDATE_TIME)
-                .apply()
+            prefs.edit().clear().apply()
         } catch (e: Exception) {
             // Ignore cache clear errors
         }

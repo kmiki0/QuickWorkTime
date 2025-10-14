@@ -7,7 +7,6 @@ import android.appwidget.AppWidgetProvider
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
-import android.os.Build
 import android.util.Log
 import android.view.View
 import android.widget.RemoteViews
@@ -27,7 +26,8 @@ data class WidgetDisplayState(
     val hasRecord: Boolean,
     val buttonText: String = "Exit",
     val isError: Boolean = false,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val isAdjusted: Boolean = false
 )
 
 /**
@@ -39,8 +39,8 @@ class WorkTimeWidgetProvider : AppWidgetProvider() {
     companion object {
         const val ACTION_CLOCK_OUT = "com.example.quickworktime.widget.ACTION_CLOCK_OUT"
         const val ACTION_RETRY_UPDATE = "com.example.quickworktime.widget.ACTION_RETRY_UPDATE"
-        const val EXTRA_TIME_COMPONENT = "time_component"
-        const val EXTRA_DIRECTION = "direction"
+        const val ACTION_ADJUST_TIME_UP = "com.example.quickworktime.widget.ACTION_ADJUST_TIME_UP"  // 追加
+        const val ACTION_ADJUST_TIME_DOWN = "com.example.quickworktime.widget.ACTION_ADJUST_TIME_DOWN"  // 追加
     }
 
     /**
@@ -73,6 +73,12 @@ class WorkTimeWidgetProvider : AppWidgetProvider() {
                 // 再試行更新
                 handleRetryUpdate(context)
             }
+            ACTION_ADJUST_TIME_UP -> {  // 追加
+                handleTimeAdjustment(context, FlickDirection.UP)
+            }
+            ACTION_ADJUST_TIME_DOWN -> {  // 追加
+                handleTimeAdjustment(context, FlickDirection.DOWN)
+            }
             // 定期更新アクション追加
             "com.example.quickworktime.widget.PERIODIC_UPDATE" -> {
                 val appWidgetManager = AppWidgetManager.getInstance(context)
@@ -99,6 +105,57 @@ class WorkTimeWidgetProvider : AppWidgetProvider() {
     }
 
 
+    // 新規メソッド追加
+    private fun handleTimeAdjustment(context: Context, direction: FlickDirection) {
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val repository = WidgetRepository.create(context)
+                val stateCache = WidgetStateCache(context)
+                val timeAdjustmentHandler = TimeAdjustmentHandler()
+
+                // 現在表示されている時間を取得
+                val displayStateResult = repository.getDisplayState()
+
+                when (displayStateResult) {
+                    is WidgetErrorHandler.WidgetResult.Success<*> -> {
+                        // WidgetDisplayStateにキャスト
+                        val displayState = displayStateResult.data as? WidgetDisplayState
+                        if (displayState == null) {
+                            Log.e("WorkTimeWidgetProvider", "表示状態の取得に失敗")
+                            return@launch
+                        }
+
+                        val currentTime = displayState.displayTime
+
+                        // 時間を調整
+                        val adjustedTime = timeAdjustmentHandler.handleFlickGesture(
+                            currentTime,
+                            direction,
+                            TimeComponent.MINUTE
+                        )
+
+                        // 調整された時間をキャッシュに保存
+                        val adjustedState = displayState.copy(
+                            displayTime = adjustedTime,
+                            isAdjusted = true  // 調整済みフラグを立てる
+                        )
+                        stateCache.saveLastGoodState(adjustedState)
+
+                        // ウィジェットを更新
+                        withContext(Dispatchers.Main) {
+                            updateAllWidgets(context)
+                        }
+                    }
+                    is WidgetErrorHandler.WidgetResult.Error<*> -> {
+                        Log.e("WorkTimeWidgetProvider", "時間調整エラー: ${displayStateResult.error.message}")
+                    }
+                }
+
+            } catch (e: Exception) {
+                Log.e("WorkTimeWidgetProvider", "時間調整中に予期しないエラー", e)
+            }
+        }
+    }
 
     /**
      * AlarmManagerを使用した定期更新システムのセットアップ
@@ -137,7 +194,7 @@ class WorkTimeWidgetProvider : AppWidgetProvider() {
     /**
      * work_time_widget_info.xml から更新間隔を取得する
      */
-    private fun getUpdateIntervalFromConfig(context: Context): Long {
+	private fun getUpdateIntervalFromConfig(context: Context): Long {
         return try {
             val appWidgetManager = AppWidgetManager.getInstance(context)
             val componentName = ComponentName(context, WorkTimeWidgetProvider::class.java)
@@ -189,46 +246,52 @@ class WorkTimeWidgetProvider : AppWidgetProvider() {
         appWidgetManager: AppWidgetManager,
         appWidgetId: Int
     ) {
-        // 更新開始ログ
-        val currentTime = java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.getDefault())
-            .format(java.util.Date())
-        Log.i("WidgetDebug", "=== updateAppWidget開始: $currentTime ===")
+        Log.i("WidgetDebug", "updateAppWidget開始: appWidgetId=$appWidgetId")
 
-        // 非同期でWidget更新を実行
-        CoroutineScope(Dispatchers.Main).launch {
+        CoroutineScope(Dispatchers.IO).launch {
             try {
-                // Repository のインスタンスを取得
                 val repository = WidgetRepository.create(context)
-                repository.initialize(context)
+                val errorHandler = WidgetErrorHandler()
+                val stateCache = WidgetStateCache(context)  // 追加
 
-                Log.i("WidgetDebug", "Repository作成・初期化完了")
+                // 【重要】キャッシュに調整済み状態があれば、それを優先的に使用
+                val cachedState = stateCache.getLastGoodState()
+                val displayStateResult = if (cachedState != null && cachedState.isAdjusted) {
+                    Log.i("WidgetDebug", "キャッシュされた調整済み状態を使用: ${cachedState.displayTime}")
+                    WidgetErrorHandler.WidgetResult.Success(cachedState)
+                } else {
+                    // キャッシュがない、または調整されていない場合は通常通り取得
+                    repository.getDisplayState()
+                }
 
-                // Widget表示状態を取得
-                val displayStateResult = repository.getWidgetDisplayState(context)
+                withContext(Dispatchers.Main) {
+                    when (displayStateResult) {
+                        is WidgetErrorHandler.WidgetResult.Success<*> -> {
+                            val displayState = displayStateResult.data as? WidgetDisplayState
+                            if (displayState == null) {
+                                Log.e("WidgetDebug", "表示状態の型変換失敗")
+                                return@withContext
+                            }
 
-                when (displayStateResult) {
-                    is WidgetErrorHandler.WidgetResult.Success -> {
-                        // 成功時：正常なWidget表示を更新
-                        val displayState = displayStateResult.data
-                        Log.i("WidgetDebug", "表示状態取得成功: displayTime=${displayState.displayTime}, hasRecord=${displayState.hasRecord}")
+                            Log.i("WidgetDebug", "表示状態取得成功: displayTime=${displayState.displayTime}, hasRecord=${displayState.hasRecord}, isAdjusted=${displayState.isAdjusted}")
 
-                        updateWidgetViews(context, appWidgetManager, appWidgetId, displayState)
-                    }
-                    is WidgetErrorHandler.WidgetResult.Error -> {
-                        // エラー時：エラー表示を更新
-                        Log.e("WidgetDebug", "表示状態取得エラー: ${displayStateResult.error.message}")
-                        updateWidgetError(context, appWidgetManager, appWidgetId, displayStateResult.error)
+                            updateWidgetViews(context, appWidgetManager, appWidgetId, displayState)
+                        }
+                        is WidgetErrorHandler.WidgetResult.Error -> {
+                            Log.e("WidgetDebug", "表示状態取得エラー: ${displayStateResult.error.message}")
+                            updateWidgetError(context, appWidgetManager, appWidgetId, displayStateResult.error)
+                        }
                     }
                 }
             } catch (e: Exception) {
-                // 予期しないエラー時の処理
                 Log.e("WidgetDebug", "updateAppWidget予期しないエラー", e)
-                updateWidgetError(context, appWidgetManager, appWidgetId,
-                    WidgetErrorHandler.WidgetError.UnknownError("Widget update failed: ${e.message}"))
+                withContext(Dispatchers.Main) {
+                    updateWidgetError(context, appWidgetManager, appWidgetId,
+                        WidgetErrorHandler.WidgetError.UnknownError("Widget update failed: ${e.message}"))
+                }
             }
         }
     }
-
 
     /**
      * 正常な状態でWidgetのViewを更新
@@ -351,6 +414,32 @@ class WorkTimeWidgetProvider : AppWidgetProvider() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
         views.setOnClickPendingIntent(R.id.widget_time_display, appPendingIntent)
+
+        // 分を増やすボタン (+5分)
+        val adjustUpIntent = Intent(context, WorkTimeWidgetProvider::class.java).apply {
+            action = ACTION_ADJUST_TIME_UP
+            putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
+        }
+        val adjustUpPendingIntent = PendingIntent.getBroadcast(
+            context,
+            appWidgetId * 10 + 1,  // ユニークなリクエストコード
+            adjustUpIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        views.setOnClickPendingIntent(R.id.widget_minute_up_button, adjustUpPendingIntent)
+
+        // 分を減らすボタン (-5分)
+        val adjustDownIntent = Intent(context, WorkTimeWidgetProvider::class.java).apply {
+            action = ACTION_ADJUST_TIME_DOWN
+            putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
+        }
+        val adjustDownPendingIntent = PendingIntent.getBroadcast(
+            context,
+            appWidgetId * 10 + 2,  // ユニークなリクエストコード
+            adjustDownIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        views.setOnClickPendingIntent(R.id.widget_minute_down_button, adjustDownPendingIntent)
     }
 
     /**
@@ -360,76 +449,13 @@ class WorkTimeWidgetProvider : AppWidgetProvider() {
     private fun handleClockOut(context: Context) {
 
         Log.i("WorkTimeWidgetProvider", "退勤ボタンタップ - サービス開始")
+
+        // キャッシュをクリア(調整済み状態をリセット)
+        val stateCache = WidgetStateCache(context)
+        stateCache.clearCache()
+
         // WidgetUpdateServiceを使用して退勤記録処理を実行
         WidgetUpdateService.startClockOutRecording(context)
-
-//        Log.i("WidgetDebug", "handleClockOut 開始")
-//        // Serviceを使わず、直接バックグラウンドで処理を実行
-//        CoroutineScope(Dispatchers.IO).launch {
-//            Log.i("WidgetDebug", "CoroutineScope 開始")
-//            try {
-//                val repository = WidgetRepository.create(context)
-//                val errorHandler = WidgetErrorHandler()
-//
-//                // 最適な退勤時間を計算
-//                val clockOutTime = repository.calculateOptimalClockOutTime()
-//
-//                // 今日のレコードチェック
-//                val todayRecordResult = repository.getTodayWorkInfo()
-//                when (todayRecordResult) {
-//                    is WidgetErrorHandler.WidgetResult.Success -> {
-//                        val existingRecord = todayRecordResult.data
-//
-//                        if (existingRecord?.endTime != null) {
-//                            // 既に記録済み、ウィジェット更新のみ
-//                            Log.i("WorkTimeWidgetProvider", "今日は既に記録済み: ${existingRecord.endTime}")
-//                            withContext(Dispatchers.Main) {
-//                                updateAllWidgets(context)
-//                            }
-//                            return@launch
-//                        }
-//                    }
-//                    is WidgetErrorHandler.WidgetResult.Error -> {
-//                        Log.w("WorkTimeWidgetProvider", "既存レコードチェックエラー: ${todayRecordResult.error.message}")
-//                        // エラーでも記録処理は続行
-//                    }
-//                }
-//
-//                // 退勤時間を記録
-//                Log.i("WorkTimeWidgetProvider", "退勤時間記録中: $clockOutTime")
-//
-//                when (val recordResult = repository.recordClockOut(clockOutTime.toString())) {
-//                    is WidgetErrorHandler.WidgetResult.Success -> {
-//                        Log.i("WorkTimeWidgetProvider", "退勤記録成功")
-//                        // メインスレッドでウィジェット更新
-//                        withContext(Dispatchers.Main) {
-//                            updateAllWidgets(context)
-//                            // データ更新通知
-//                            repository.notifyDataUpdated(context)
-//                        }
-//                    }
-//                    is WidgetErrorHandler.WidgetResult.Error -> {
-//                        Log.e("WorkTimeWidgetProvider", "退勤記録失敗: ${recordResult.error.message}")
-//                        errorHandler.logError(context, recordResult.error, "退勤記録")
-//                        // エラーでもウィジェット更新は試行
-//                        withContext(Dispatchers.Main) {
-//                            updateAllWidgets(context)
-//                        }
-//                    }
-//                }
-//
-//            } catch (e: Exception) {
-//                Log.e("WorkTimeWidgetProvider", "退勤処理中に予期しないエラー", e)
-//                // エラーでもウィジェット更新は試行
-//                try {
-//                    withContext(Dispatchers.Main) {
-//                        updateAllWidgets(context)
-//                    }
-//                } catch (updateException: Exception) {
-//                    Log.e("WorkTimeWidgetProvider", "エラー後のウィジェット更新失敗", updateException)
-//                }
-//            }
-//        }
     }
 
     /**

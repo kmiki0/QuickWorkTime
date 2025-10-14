@@ -4,7 +4,6 @@ package com.example.quickworktime.widget
 import android.appwidget.AppWidgetManager
 import android.content.ComponentName
 import android.content.Context
-import android.content.res.Configuration
 import android.util.Log
 import com.example.quickworktime.room.AppDatabase
 import com.example.quickworktime.room.WorkInfo
@@ -228,6 +227,28 @@ class WidgetRepository(
             }
         )
     }
+
+    /**
+     * 現在表示されているウィジェットの状態を取得（時間調整用）
+     * キャッシュされた状態を優先的に返し、なければ新規に取得
+     *
+     * @return 現在のウィジェット表示状態
+     */
+    suspend fun getDisplayState(): WidgetErrorHandler.WidgetResult<WidgetDisplayState> = withContext(Dispatchers.IO) {
+        if (!::stateCache.isInitialized) {
+            initialize(context)
+        }
+
+        // まずキャッシュから取得を試みる
+        val cachedState = stateCache.getLastGoodState()
+        if (cachedState != null) {
+            return@withContext WidgetErrorHandler.WidgetResult.Success(cachedState)
+        }
+
+        // キャッシュがなければ新規取得
+        getWidgetDisplayState(context)
+    }
+
 
     /**
      * エラーハンドリングを含むウィジェットテーマの更新（設定変更用）
