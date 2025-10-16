@@ -272,10 +272,7 @@ class WorkTimeWidgetProvider : AppWidgetProvider() {
                             updateWidgetViews(views, displayState)
 
                             // ボタンクリック時のPendingIntent設定
-                            setupButtonIntents(context, views, appWidgetId)
-
-                            // StackViewの初期位置を設定
-                            setupStackViewPosition(context, views, displayState.displayTime)
+                            setupButtonIntents(context, views, appWidgetId, displayState.displayTime)
 
                             // Widgetを更新
                             appWidgetManager.updateAppWidget(appWidgetId, views)
@@ -327,6 +324,9 @@ class WorkTimeWidgetProvider : AppWidgetProvider() {
         views: RemoteViews,
         displayState: WidgetDisplayState
     ) {
+        // 時刻を表示
+        views.setTextViewText(R.id.widget_time_text, displayState.displayTime)
+
         // 日付テキストを設定
         views.setTextViewText(R.id.widget_date_text, displayState.dateText)
 
@@ -341,43 +341,6 @@ class WorkTimeWidgetProvider : AppWidgetProvider() {
         // Exitボタンのテキスト設定
         views.setTextViewText(R.id.widget_clock_out_button, displayState.buttonText)
     }
-//    private fun updateWidgetViews(
-//        context: Context,
-//        appWidgetManager: AppWidgetManager,
-//        appWidgetId: Int,
-//        displayState: WidgetDisplayState
-//    ) {
-//        Log.i("WidgetDebug", "updateWidgetViews開始: displayTime=${displayState.displayTime}")
-//
-//        // RemoteViewsを作成
-//        val views = RemoteViews(context.packageName, R.layout.work_time_widget)
-//
-//        // 日付表示の更新
-//        Log.i("WidgetDebug", "日付更新: ${displayState.dateText}")
-//        views.setTextViewText(R.id.widget_date_text, displayState.dateText)
-//
-//        // ステータステキストの更新
-//        if (displayState.hasRecord) {
-//            Log.i("WidgetDebug", "ステータス: 記録済み")
-//            views.setTextViewText(R.id.widget_status_text, "記録済み")
-//            views.setViewVisibility(R.id.widget_status_text, View.VISIBLE)
-//        } else {
-//            Log.i("WidgetDebug", "ステータス: 退勤予定")
-//            views.setTextViewText(R.id.widget_status_text, "退勤予定")
-//            views.setViewVisibility(R.id.widget_status_text, View.VISIBLE)
-//        }
-//
-//
-//        // ボタンクリック時のPendingIntent設定
-//        setupButtonIntents(context, views, appWidgetId)
-//
-//        // StackViewの初期位置を設定
-//        setupStackViewPosition(context, views, displayState.displayTime)
-//
-//        // Widgetを更新
-//        appWidgetManager.updateAppWidget(appWidgetId, views)
-//        Log.i("WidgetDebug", "=== updateWidgetViews完了 ===")
-//    }
 
     /**
      * エラー状態でWidgetを更新
@@ -412,29 +375,6 @@ class WorkTimeWidgetProvider : AppWidgetProvider() {
         appWidgetManager.updateAppWidget(appWidgetId, views)
     }
 
-    /**
-     * StackViewの表示位置を設定
-     */
-    private fun setupStackViewPosition(
-        context: Context,
-        views: RemoteViews,
-        currentTime: String
-    ) {
-        try {
-            // 時刻リストの中から現在時刻に対応するインデックスを計算
-            val timeParts = currentTime.split(":")
-            val hour = timeParts[0].toInt()
-            val minute = timeParts[1].toInt()
-
-            // 5分刻みでのインデックスを計算
-            val position = (hour * 12) + (minute / 5)
-
-            // StackViewの表示位置を設定
-            views.setDisplayedChild(R.id.widget_time_stack, position)
-        } catch (e: Exception) {
-            Log.e("WorkTimeWidgetProvider", "StackView位置設定エラー", e)
-        }
-    }
 
     /**
      * ボタンのPendingIntentを設定
@@ -442,7 +382,8 @@ class WorkTimeWidgetProvider : AppWidgetProvider() {
     private fun setupButtonIntents(
         context: Context,
         views: RemoteViews,
-        appWidgetId: Int
+        appWidgetId: Int,
+        currentTime: String
     ) {
         // 退勤ボタンのクリックイベント
         val clockOutIntent = Intent(context, WorkTimeWidgetProvider::class.java).apply {
@@ -457,25 +398,19 @@ class WorkTimeWidgetProvider : AppWidgetProvider() {
         )
         views.setOnClickPendingIntent(R.id.widget_clock_out_button, clockOutPendingIntent)
 
-        // StackView用のRemoteAdapter設定
-        val serviceIntent = Intent(context, WidgetRemoteViewsService::class.java).apply {
+        // 時刻表示部分をタップでピッカーを開く
+        val pickerIntent = Intent(context, TransparentTimePickerActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
             putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
-            data = android.net.Uri.parse(toUri(Intent.URI_INTENT_SCHEME))
+            putExtra("current_time", currentTime)
         }
-        views.setRemoteAdapter(R.id.widget_time_stack, serviceIntent)
-
-        // StackViewアイテムクリック時のPendingIntent設定
-        val clickIntent = Intent(context, WorkTimeWidgetProvider::class.java).apply {
-            action = ACTION_TIME_SELECTED
-            putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
-        }
-        val clickPendingIntent = PendingIntent.getBroadcast(
+        val pickerPendingIntent = PendingIntent.getActivity(
             context,
-            appWidgetId * 100,
-            clickIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE  // MUTABLEに変更
+            appWidgetId,
+            pickerIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
-        views.setPendingIntentTemplate(R.id.widget_time_stack, clickPendingIntent)
+        views.setOnClickPendingIntent(R.id.widget_time_display, pickerPendingIntent)
     }
 
     /**
