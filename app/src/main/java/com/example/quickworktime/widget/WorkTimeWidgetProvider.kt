@@ -341,43 +341,7 @@ class WorkTimeWidgetProvider : AppWidgetProvider() {
         // Exitボタンのテキスト設定
         views.setTextViewText(R.id.widget_clock_out_button, displayState.buttonText)
     }
-//    private fun updateWidgetViews(
-//        context: Context,
-//        appWidgetManager: AppWidgetManager,
-//        appWidgetId: Int,
-//        displayState: WidgetDisplayState
-//    ) {
-//        Log.i("WidgetDebug", "updateWidgetViews開始: displayTime=${displayState.displayTime}")
-//
-//        // RemoteViewsを作成
-//        val views = RemoteViews(context.packageName, R.layout.work_time_widget)
-//
-//        // 日付表示の更新
-//        Log.i("WidgetDebug", "日付更新: ${displayState.dateText}")
-//        views.setTextViewText(R.id.widget_date_text, displayState.dateText)
-//
-//        // ステータステキストの更新
-//        if (displayState.hasRecord) {
-//            Log.i("WidgetDebug", "ステータス: 記録済み")
-//            views.setTextViewText(R.id.widget_status_text, "記録済み")
-//            views.setViewVisibility(R.id.widget_status_text, View.VISIBLE)
-//        } else {
-//            Log.i("WidgetDebug", "ステータス: 退勤予定")
-//            views.setTextViewText(R.id.widget_status_text, "退勤予定")
-//            views.setViewVisibility(R.id.widget_status_text, View.VISIBLE)
-//        }
-//
-//
-//        // ボタンクリック時のPendingIntent設定
-//        setupButtonIntents(context, views, appWidgetId)
-//
-//        // StackViewの初期位置を設定
-//        setupStackViewPosition(context, views, displayState.displayTime)
-//
-//        // Widgetを更新
-//        appWidgetManager.updateAppWidget(appWidgetId, views)
-//        Log.i("WidgetDebug", "=== updateWidgetViews完了 ===")
-//    }
+
 
     /**
      * エラー状態でWidgetを更新
