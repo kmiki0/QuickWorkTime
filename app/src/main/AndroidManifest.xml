@@ -45,12 +45,6 @@
             android:enabled="true"
             android:exported="false" />
 
-        <!-- StackView用のRemoteViewsService 追加 -->
-        <service
-            android:name=".widget.WidgetRemoteViewsService"
-            android:permission="android.permission.BIND_REMOTEVIEWS"
-            android:exported="false" />
-
         <!-- Widget Update Receiver for automatic updates -->
         <receiver
             android:name=".widget.WidgetUpdateReceiver"
@@ -65,6 +59,13 @@
                 <action android:name="com.example.quickworktime.widget.FORCE_UPDATE" />
             </intent-filter>
         </receiver>
+
+        <!-- 透明背景のActivity -->
+        <activity
+            android:name=".widget.TransparentTimePickerActivity"
+            android:theme="@style/TransparentTheme"
+            android:excludeFromRecents="true"
+            android:exported="false" />
     </application>
 
 </manifest>
