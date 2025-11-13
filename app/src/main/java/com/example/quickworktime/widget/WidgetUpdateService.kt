@@ -15,7 +15,7 @@ import kotlinx.coroutines.launch
  * This service handles clock-out recording and widget refresh operations
  */
 class WidgetUpdateService : Service() {
-
+    
     private val serviceJob = Job()
     private val serviceScope = CoroutineScope(Dispatchers.IO + serviceJob)
 
@@ -24,7 +24,6 @@ class WidgetUpdateService : Service() {
         const val ACTION_RECORD_CLOCK_OUT = "com.example.quickworktime.widget.ACTION_RECORD_CLOCK_OUT"
         const val ACTION_UPDATE_WIDGET = "com.example.quickworktime.widget.ACTION_UPDATE_WIDGET"
         const val EXTRA_CLOCK_OUT_TIME = "clock_out_time"
-        private const val ACTION_CLOCK_OUT = "com.example.quickworktime.widget.ACTION_CLOCK_OUT"
 
         // 重複実行防止用フラグ
         @Volatile
@@ -59,7 +58,7 @@ class WidgetUpdateService : Service() {
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
-
+    
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         Log.i("WidgetUpdateService", "onStartCommand() 呼び出し - action: ${intent?.action}")
 
@@ -82,7 +81,7 @@ class WidgetUpdateService : Service() {
         }
         return START_NOT_STICKY
     }
-
+    
     override fun onDestroy() {
         super.onDestroy()
         serviceJob.cancel()
@@ -159,7 +158,7 @@ class WidgetUpdateService : Service() {
         serviceScope.launch {
             val repository = WidgetRepository.create(this@WidgetUpdateService)
             val errorHandler = WidgetErrorHandler()
-
+            
             when (val result = repository.updateWidget(this@WidgetUpdateService)) {
                 is WidgetErrorHandler.WidgetResult.Success -> {
                     // Update successful
@@ -168,7 +167,7 @@ class WidgetUpdateService : Service() {
                     errorHandler.logError(this@WidgetUpdateService, result.error, "handleWidgetUpdate")
                 }
             }
-
+            
             stopSelf(startId)
         }
     }

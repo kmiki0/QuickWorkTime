@@ -7,9 +7,11 @@ import android.appwidget.AppWidgetProvider
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.util.Log
 import android.view.View
 import android.widget.RemoteViews
+import com.example.quickworktime.MainActivity
 import com.example.quickworktime.R
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -25,8 +27,7 @@ data class WidgetDisplayState(
     val hasRecord: Boolean,
     val buttonText: String = "Exit",
     val isError: Boolean = false,
-    val errorMessage: String? = null,
-    val isAdjusted: Boolean = false
+    val errorMessage: String? = null
 )
 
 /**
@@ -38,7 +39,8 @@ class WorkTimeWidgetProvider : AppWidgetProvider() {
     companion object {
         const val ACTION_CLOCK_OUT = "com.example.quickworktime.widget.ACTION_CLOCK_OUT"
         const val ACTION_RETRY_UPDATE = "com.example.quickworktime.widget.ACTION_RETRY_UPDATE"
-        const val ACTION_TIME_SELECTED = "com.example.quickworktime.widget.ACTION_TIME_SELECTED"
+        const val EXTRA_TIME_COMPONENT = "time_component"
+        const val EXTRA_DIRECTION = "direction"
     }
 
     /**
@@ -97,52 +99,6 @@ class WorkTimeWidgetProvider : AppWidgetProvider() {
     }
 
 
-    /**
-     * StackViewで時刻が選択された時の処理
-     */
-    private fun handleTimeSelected(context: Context, intent: Intent) {
-        val selectedTime = intent.getStringExtra("selected_time") ?: return
-        val position = intent.getIntExtra("position", -1)
-
-        Log.i("WorkTimeWidgetProvider", "時刻選択: $selectedTime (position: $position)")
-
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
-                val repository = WidgetRepository.create(context)
-                val stateCache = WidgetStateCache(context)
-
-                // 現在の表示状態を取得
-                val displayStateResult = repository.getDisplayState()
-
-                when (displayStateResult) {
-                    is WidgetErrorHandler.WidgetResult.Success<*> -> {
-                        val displayState = displayStateResult.data as? WidgetDisplayState
-                        if (displayState == null) {
-                            Log.e("WorkTimeWidgetProvider", "表示状態の取得に失敗")
-                            return@launch
-                        }
-
-                        // 選択された時刻で状態を更新
-                        val adjustedState = displayState.copy(
-                            displayTime = selectedTime,
-                            isAdjusted = true  // 調整済みフラグを立てる
-                        )
-                        stateCache.saveLastGoodState(adjustedState)
-
-                        // ウィジェットを更新
-                        withContext(Dispatchers.Main) {
-                            updateAllWidgets(context)
-                        }
-                    }
-                    is WidgetErrorHandler.WidgetResult.Error -> {
-                        Log.e("WorkTimeWidgetProvider", "時刻選択エラー: ${displayStateResult.error}")
-                    }
-                }
-            } catch (e: Exception) {
-                Log.e("WorkTimeWidgetProvider", "時刻選択処理エラー", e)
-            }
-        }
-    }
 
     /**
      * AlarmManagerを使用した定期更新システムのセットアップ
@@ -181,7 +137,7 @@ class WorkTimeWidgetProvider : AppWidgetProvider() {
     /**
      * work_time_widget_info.xml から更新間隔を取得する
      */
-	private fun getUpdateIntervalFromConfig(context: Context): Long {
+    private fun getUpdateIntervalFromConfig(context: Context): Long {
         return try {
             val appWidgetManager = AppWidgetManager.getInstance(context)
             val componentName = ComponentName(context, WorkTimeWidgetProvider::class.java)
@@ -233,115 +189,102 @@ class WorkTimeWidgetProvider : AppWidgetProvider() {
         appWidgetManager: AppWidgetManager,
         appWidgetId: Int
     ) {
-        Log.i("WidgetDebug", "updateAppWidget開始: appWidgetId=$appWidgetId")
+        // 更新開始ログ
+        val currentTime = java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.getDefault())
+            .format(java.util.Date())
+        Log.i("WidgetDebug", "=== updateAppWidget開始: $currentTime ===")
 
-
-        CoroutineScope(Dispatchers.IO).launch {
+        // 非同期でWidget更新を実行
+        CoroutineScope(Dispatchers.Main).launch {
             try {
+                // Repository のインスタンスを取得
                 val repository = WidgetRepository.create(context)
-                val stateCache = WidgetStateCache(context)  // 追加
+                repository.initialize(context)
 
-                // 【重要】キャッシュに調整済み状態があれば、それを優先的に使用
-                val cachedState = stateCache.getLastGoodState()
-                val displayStateResult = if (cachedState != null && cachedState.isAdjusted) {
-                    Log.i("WidgetDebug", "キャッシュされた調整済み状態を使用: ${cachedState.displayTime}")
-                    WidgetErrorHandler.WidgetResult.Success(cachedState)
-                } else {
-                    // キャッシュがない、または調整されていない場合は通常通り取得
-                    repository.getDisplayState()
-                }
+                Log.i("WidgetDebug", "Repository作成・初期化完了")
 
-                // ここで layoutId を取得
-                val layoutId = getWidgetLayoutId(context, appWidgetId, appWidgetManager)
+                // Widget表示状態を取得
+                val displayStateResult = repository.getWidgetDisplayState(context)
 
-                withContext(Dispatchers.Main) {
-                    when (displayStateResult) {
-                        is WidgetErrorHandler.WidgetResult.Success<*> -> {
-                            val displayState = displayStateResult.data as? WidgetDisplayState
-                            if (displayState == null) {
-                                Log.e("WidgetDebug", "表示状態の型変換失敗")
-                                return@withContext
-                            }
+                when (displayStateResult) {
+                    is WidgetErrorHandler.WidgetResult.Success -> {
+                        // 成功時：正常なWidget表示を更新
+                        val displayState = displayStateResult.data
+                        Log.i("WidgetDebug", "表示状態取得成功: displayTime=${displayState.displayTime}, hasRecord=${displayState.hasRecord}")
 
-                            Log.i("WidgetDebug", "表示状態取得成功: displayTime=${displayState.displayTime}, hasRecord=${displayState.hasRecord}, isAdjusted=${displayState.isAdjusted}")
-
-                            // RemoteViewsを作成
-                            val views = RemoteViews(context.packageName, layoutId)
-
-                            // ウィジェットの表示内容を更新
-                            updateWidgetViews(views, displayState)
-
-                            // ボタンクリック時のPendingIntent設定
-                            setupButtonIntents(context, views, appWidgetId)
-
-                            // StackViewの初期位置を設定
-                            setupStackViewPosition(context, views, displayState.displayTime)
-
-                            // Widgetを更新
-                            appWidgetManager.updateAppWidget(appWidgetId, views)
-                        }
-                        is WidgetErrorHandler.WidgetResult.Error -> {
-                            Log.e("WidgetDebug", "表示状態取得エラー: ${displayStateResult.error.message}")
-                            updateWidgetError(context, appWidgetManager, appWidgetId, displayStateResult.error)
-                        }
+                        updateWidgetViews(context, appWidgetManager, appWidgetId, displayState)
+                    }
+                    is WidgetErrorHandler.WidgetResult.Error -> {
+                        // エラー時：エラー表示を更新
+                        Log.e("WidgetDebug", "表示状態取得エラー: ${displayStateResult.error.message}")
+                        updateWidgetError(context, appWidgetManager, appWidgetId, displayStateResult.error)
                     }
                 }
             } catch (e: Exception) {
+                // 予期しないエラー時の処理
                 Log.e("WidgetDebug", "updateAppWidget予期しないエラー", e)
-                withContext(Dispatchers.Main) {
-                    updateWidgetError(context, appWidgetManager, appWidgetId,
-                        WidgetErrorHandler.WidgetError.UnknownError("Widget update failed: ${e.message}"))
-                }
+                updateWidgetError(context, appWidgetManager, appWidgetId,
+                    WidgetErrorHandler.WidgetError.UnknownError("Widget update failed: ${e.message}"))
             }
         }
     }
 
-    /**
-     * ウィジェットのサイズに応じたレイアウトIDを取得
-     */
-    private fun getWidgetLayoutId(
-        context: Context,
-        appWidgetId: Int,
-        appWidgetManager: AppWidgetManager
-    ): Int {
-        // ウィジェットのサイズ情報を取得
-        val options = appWidgetManager.getAppWidgetOptions(appWidgetId)
-
-        // 最小幅を取得（dp単位）
-        val minWidth = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 0)
-        val minHeight = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 0)
-
-        // サイズに応じてレイアウトを選択
-        // 幅が180dp未満、または高さが60dp未満の場合は小サイズレイアウト
-        return if (minWidth < 180 || minHeight < 60) {
-            R.layout.work_time_widget_small
-        } else {
-            R.layout.work_time_widget
-        }
-    }
 
     /**
      * 正常な状態でWidgetのViewを更新
      */
     private fun updateWidgetViews(
-        views: RemoteViews,
+        context: Context,
+        appWidgetManager: AppWidgetManager,
+        appWidgetId: Int,
         displayState: WidgetDisplayState
     ) {
-        // 日付テキストを設定
-        views.setTextViewText(R.id.widget_date_text, displayState.dateText)
+        Log.i("WidgetDebug", "updateWidgetViews開始: displayTime=${displayState.displayTime}")
 
-        // ステータステキストの表示/非表示を設定
-        if (displayState.hasRecord) {
-            views.setViewVisibility(R.id.widget_status_text, View.GONE)
+        // RemoteViewsを作成
+        val views = RemoteViews(context.packageName, R.layout.work_time_widget)
+
+        // 時間表示の更新
+        val timeParts = displayState.displayTime.split(":")
+        if (timeParts.size >= 2) {
+            val hour = timeParts[0]
+            val minute = timeParts[1]
+
+            Log.i("WidgetDebug", "時間更新: ${hour}:${minute}")
+            views.setTextViewText(R.id.widget_hour_text, hour)
+            views.setTextViewText(R.id.widget_minute_text, minute)
         } else {
-            views.setViewVisibility(R.id.widget_status_text, View.VISIBLE)
-            views.setTextViewText(R.id.widget_status_text, "退勤予定")
+            Log.w("WidgetDebug", "時間形式エラー: ${displayState.displayTime}")
+            views.setTextViewText(R.id.widget_hour_text, "--")
+            views.setTextViewText(R.id.widget_minute_text, "--")
         }
 
-        // Exitボタンのテキスト設定
-        views.setTextViewText(R.id.widget_clock_out_button, displayState.buttonText)
-    }
+        // 日付表示の更新
+        Log.i("WidgetDebug", "日付更新: ${displayState.dateText}")
+        views.setTextViewText(R.id.widget_date_text, displayState.dateText)
 
+        // ステータステキストの更新
+        if (displayState.hasRecord) {
+            Log.i("WidgetDebug", "ステータス: 記録済み")
+            views.setTextViewText(R.id.widget_status_text, "記録済み")
+            views.setViewVisibility(R.id.widget_status_text, View.VISIBLE)
+        } else {
+            Log.i("WidgetDebug", "ステータス: 退勤予定")
+            views.setTextViewText(R.id.widget_status_text, "退勤予定")
+            views.setViewVisibility(R.id.widget_status_text, View.VISIBLE)
+        }
+
+        // ボタンテキストの更新
+        Log.i("WidgetDebug", "ボタン更新: ${displayState.buttonText}")
+        views.setTextViewText(R.id.widget_clock_out_button, displayState.buttonText)
+
+        // ボタンクリック時のPendingIntent設定
+        setupButtonIntents(context, views, appWidgetId)
+
+        // Widgetを更新
+        appWidgetManager.updateAppWidget(appWidgetId, views)
+        Log.i("WidgetDebug", "=== updateWidgetViews完了 ===")
+    }
 
     /**
      * エラー状態でWidgetを更新
@@ -355,6 +298,8 @@ class WorkTimeWidgetProvider : AppWidgetProvider() {
         val views = RemoteViews(context.packageName, R.layout.work_time_widget)
 
         // エラー表示
+        views.setTextViewText(R.id.widget_hour_text, "--")
+        views.setTextViewText(R.id.widget_minute_text, "--")
         views.setTextViewText(R.id.widget_date_text, "エラー")
         views.setTextViewText(R.id.widget_status_text, "再試行してください")
         views.setTextViewText(R.id.widget_clock_out_button, "再試行")
@@ -374,30 +319,6 @@ class WorkTimeWidgetProvider : AppWidgetProvider() {
 
         // Widgetを更新
         appWidgetManager.updateAppWidget(appWidgetId, views)
-    }
-
-    /**
-     * StackViewの表示位置を設定
-     */
-    private fun setupStackViewPosition(
-        context: Context,
-        views: RemoteViews,
-        currentTime: String
-    ) {
-        try {
-            // 時刻リストの中から現在時刻に対応するインデックスを計算
-            val timeParts = currentTime.split(":")
-            val hour = timeParts[0].toInt()
-            val minute = timeParts[1].toInt()
-
-            // 5分刻みでのインデックスを計算
-            val position = (hour * 12) + (minute / 5)
-
-            // StackViewの表示位置を設定
-            views.setDisplayedChild(R.id.widget_time_stack, position)
-        } catch (e: Exception) {
-            Log.e("WorkTimeWidgetProvider", "StackView位置設定エラー", e)
-        }
     }
 
     /**
@@ -421,25 +342,15 @@ class WorkTimeWidgetProvider : AppWidgetProvider() {
         )
         views.setOnClickPendingIntent(R.id.widget_clock_out_button, clockOutPendingIntent)
 
-        // StackView用のRemoteAdapter設定
-        val serviceIntent = Intent(context, WidgetRemoteViewsService::class.java).apply {
-            putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
-            data = android.net.Uri.parse(toUri(Intent.URI_INTENT_SCHEME))
-        }
-        views.setRemoteAdapter(R.id.widget_time_stack, serviceIntent)
-
-        // StackViewアイテムクリック時のPendingIntent設定
-        val clickIntent = Intent(context, WorkTimeWidgetProvider::class.java).apply {
-            action = ACTION_TIME_SELECTED
-            putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
-        }
-        val clickPendingIntent = PendingIntent.getBroadcast(
+        // Widget全体のクリック時にアプリを開く
+        val appIntent = Intent(context, MainActivity::class.java)
+        val appPendingIntent = PendingIntent.getActivity(
             context,
-            appWidgetId * 100,
-            clickIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE  // MUTABLEに変更
+            appWidgetId,
+            appIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
-        views.setPendingIntentTemplate(R.id.widget_time_stack, clickPendingIntent)
+        views.setOnClickPendingIntent(R.id.widget_time_display, appPendingIntent)
     }
 
     /**
@@ -449,11 +360,6 @@ class WorkTimeWidgetProvider : AppWidgetProvider() {
     private fun handleClockOut(context: Context) {
 
         Log.i("WorkTimeWidgetProvider", "退勤ボタンタップ - サービス開始")
-
-        // キャッシュをクリア(調整済み状態をリセット)
-        val stateCache = WidgetStateCache(context)
-        stateCache.clearCache()
-
         // WidgetUpdateServiceを使用して退勤記録処理を実行
         WidgetUpdateService.startClockOutRecording(context)
     }
