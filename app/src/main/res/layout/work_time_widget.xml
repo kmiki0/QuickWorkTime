@@ -7,7 +7,7 @@
     android:padding="@dimen/widget_padding"
     android:gravity="center_vertical">
 
-    <!-- Time Display Section -->
+    <!-- Time Display Section - StackView -->
     <FrameLayout
         android:id="@+id/widget_time_display"
         android:layout_width="0dp"
@@ -16,17 +16,12 @@
         android:background="@drawable/widget_time_display_background"
         android:padding="8dp">
 
-        <!-- 時刻表示 -->
-        <TextView
-            android:id="@+id/widget_time_text"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:text="18:00"
-            android:textSize="48sp"
-            android:textColor="@color/widget_text_primary"
-            android:textStyle="bold"
-            android:fontFamily="@font/jersey10_regular" />
+        <StackView
+            android:id="@+id/widget_time_stack"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:loopViews="false"
+            android:animateLayoutChanges="true" />
 
         <!-- Date and Status Text -->
         <LinearLayout
