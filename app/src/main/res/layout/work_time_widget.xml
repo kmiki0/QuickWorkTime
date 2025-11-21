@@ -7,34 +7,25 @@
     android:padding="@dimen/widget_padding"
     android:gravity="center_vertical">
 
-    <!-- Time Display Section -->
-    <FrameLayout
-        android:id="@+id/widget_time_display"
+    <!-- 時間表示エリア全体(縦並び) -->
+    <LinearLayout
         android:layout_width="0dp"
         android:layout_height="match_parent"
         android:layout_weight="1"
-        android:background="@drawable/widget_time_display_background"
-        android:padding="8dp">
+        android:orientation="vertical">
 
-        <!-- 時刻表示 -->
-        <TextView
-            android:id="@+id/widget_time_text"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:text="18:00"
-            android:textSize="48sp"
-            android:textColor="@color/widget_text_primary"
-            android:textStyle="bold"
-            android:fontFamily="@font/jersey10_regular" />
-
-        <!-- Date and Status Text -->
+        <!-- Time Display Section -->
         <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="bottom|center_horizontal"
-            android:orientation="horizontal"
-            android:layout_marginBottom="8dp">
+            android:id="@+id/widget_time_display"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:background="@drawable/widget_time_display_background"
+            android:clickable="true"
+            android:focusable="true"
+            android:padding="8dp">
 
             <TextView
                 android:id="@+id/widget_date_text"
@@ -43,28 +34,109 @@
                 android:text="今日"
                 android:textSize="@dimen/widget_date_text_size"
                 android:textColor="@color/widget_text_secondary"
-                android:fontFamily="@font/jersey10_regular" />
+                android:fontFamily="@font/jersey10_regular"
+                android:layout_marginTop="4dp" />
 
-            <TextView
-                android:id="@+id/widget_status_text"
+            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="退勤予定"
-                android:textSize="@dimen/widget_status_text_size"
-                android:textColor="@color/widget_text_secondary"
-                android:fontFamily="@font/jersey10_regular"
-                android:layout_marginStart="4dp"
-                android:visibility="visible" />
+                android:orientation="horizontal"
+                android:gravity="center">
+
+                <TextView
+                    android:id="@+id/widget_hour_text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="18"
+                    android:textSize="@dimen/widget_time_text_size"
+                    android:textStyle="bold"
+                    android:textColor="@color/widget_text_primary"
+                    android:fontFamily="@font/jersey10_regular"
+                    android:background="@drawable/widget_time_component_background"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:padding="4dp"
+                    android:minWidth="@dimen/widget_time_component_min_width"
+                    android:gravity="center" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text=":"
+                    android:textSize="@dimen/widget_time_text_size"
+                    android:textStyle="bold"
+                    android:textColor="@color/widget_text_primary"
+                    android:fontFamily="@font/jersey10_regular"
+                    android:layout_marginHorizontal="2dp" />
+
+                <TextView
+                    android:id="@+id/widget_minute_text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="15"
+                    android:textSize="@dimen/widget_time_text_size"
+                    android:textStyle="bold"
+                    android:textColor="@color/widget_text_primary"
+                    android:fontFamily="@font/jersey10_regular"
+                    android:background="@drawable/widget_time_component_background"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:padding="4dp"
+                    android:minWidth="@dimen/widget_time_component_min_width"
+                    android:gravity="center" />
+
+            </LinearLayout>
 
         </LinearLayout>
 
-    </FrameLayout>
+        <!-- 時間調整ボタン(横並び) -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="8dp"
+            android:gravity="center">
+
+            <Button
+                android:id="@+id/widget_minus_5_button"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:minHeight="32dp"
+                android:text="-5分"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:textColor="@color/widget_text_primary"
+                android:fontFamily="@font/jersey10_regular"
+                android:background="@drawable/widget_exit_button_background"
+                android:padding="4dp"
+                android:layout_marginEnd="4dp" />
+
+            <Button
+                android:id="@+id/widget_plus_5_button"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:minHeight="32dp"
+                android:text="+5分"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:textColor="@color/widget_text_primary"
+                android:fontFamily="@font/jersey10_regular"
+                android:background="@drawable/widget_exit_button_background"
+                android:padding="4dp"
+                android:layout_marginStart="4dp" />
+
+        </LinearLayout>
+
+    </LinearLayout>
 
     <!-- Clock Out Button -->
     <Button
         android:id="@+id/widget_clock_out_button"
         android:layout_width="wrap_content"
         android:layout_height="match_parent"
+        android:layout_weight="0"
         android:layout_marginStart="12dp"
         android:text="Exit"
         android:textSize="@dimen/widget_button_text_size"
@@ -76,3 +148,4 @@
         android:elevation="@dimen/widget_elevation" />
 
 </LinearLayout>
+

@@ -7,7 +7,6 @@ import android.appwidget.AppWidgetProvider
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
-import android.os.Build
 import android.util.Log
 import android.view.View
 import android.widget.RemoteViews
@@ -27,7 +26,8 @@ data class WidgetDisplayState(
     val hasRecord: Boolean,
     val buttonText: String = "Exit",
     val isError: Boolean = false,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val isAdjusted: Boolean = false
 )
 
 /**
@@ -41,6 +41,8 @@ class WorkTimeWidgetProvider : AppWidgetProvider() {
         const val ACTION_RETRY_UPDATE = "com.example.quickworktime.widget.ACTION_RETRY_UPDATE"
         const val EXTRA_TIME_COMPONENT = "time_component"
         const val EXTRA_DIRECTION = "direction"
+        const val ACTION_ADJUST_TIME_MINUS_5 = "com.example.quickworktime.widget.ACTION_ADJUST_TIME_MINUS_5"
+        const val ACTION_ADJUST_TIME_PLUS_5 = "com.example.quickworktime.widget.ACTION_ADJUST_TIME_PLUS_5"
     }
 
     /**
@@ -72,6 +74,16 @@ class WorkTimeWidgetProvider : AppWidgetProvider() {
             ACTION_RETRY_UPDATE -> {
                 // 再試行更新
                 handleRetryUpdate(context)
+            }
+            ACTION_ADJUST_TIME_MINUS_5 -> {
+                // -5分ボタンタップ
+                Log.i("WidgetUpdate", "-5分ボタンタップ")
+                handleTimeAdjustment(context, -5)
+            }
+            ACTION_ADJUST_TIME_PLUS_5 -> {
+                // +5分ボタンタップ
+                Log.i("WidgetUpdate", "+5分ボタンタップ")
+                handleTimeAdjustment(context, 5)
             }
             // 定期更新アクション追加
             "com.example.quickworktime.widget.PERIODIC_UPDATE" -> {
@@ -183,6 +195,73 @@ class WorkTimeWidgetProvider : AppWidgetProvider() {
         }
     }
 
+    /**
+     * 時間調整処理
+     * @param context コンテキスト
+     * @param minutesDelta 調整する分数(正の値で加算、負の値で減算)
+     */
+    private fun handleTimeAdjustment(context: Context, minutesDelta: Int) {
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val stateCache = WidgetStateCache(context)
+                val repository = WidgetRepository.create(context)
+                repository.initialize(context)
+
+                // 現在の表示状態を取得
+                when (val displayStateResult = repository.getDisplayState()) {
+                    is WidgetErrorHandler.WidgetResult.Success<*> -> {
+                        val displayState = displayStateResult.data as? WidgetDisplayState
+                        if (displayState == null) {
+                            Log.e("WorkTimeWidgetProvider", "表示状態の取得に失敗")
+                            return@launch
+                        }
+
+                        // 時間を調整
+                        val adjustedTime = adjustTime(displayState.displayTime, minutesDelta)
+
+                        // 調整後の状態を保存
+                        val adjustedState = displayState.copy(
+                            displayTime = adjustedTime,
+                            isAdjusted = true
+                        )
+                        stateCache.saveLastGoodState(adjustedState)
+
+                        // ウィジェットを更新
+                        withContext(Dispatchers.Main) {
+                            updateAllWidgets(context)
+                        }
+                    }
+                    is WidgetErrorHandler.WidgetResult.Error -> {
+                        Log.e("WorkTimeWidgetProvider", "時間調整エラー: ${displayStateResult.error}")
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("WorkTimeWidgetProvider", "時間調整処理エラー", e)
+            }
+        }
+    }
+
+    /**
+     * 時間文字列を指定分数だけ調整する
+     * @param timeString 時間文字列 (HH:mm形式)
+     * @param minutesDelta 調整する分数
+     * @return 調整後の時間文字列 (HH:mm形式)
+     */
+    private fun adjustTime(timeString: String, minutesDelta: Int): String {
+        return try {
+            val formatter = java.time.format.DateTimeFormatter.ofPattern("HH:mm")
+            val time = java.time.LocalTime.parse(timeString, formatter)
+            val adjustedTime = if (minutesDelta > 0) {
+                time.plusMinutes(minutesDelta.toLong())
+            } else {
+                time.minusMinutes((-minutesDelta).toLong())
+            }
+            adjustedTime.format(formatter)
+        } catch (e: Exception) {
+            Log.e("WorkTimeWidgetProvider", "時間調整計算エラー", e)
+            timeString
+        }
+    }
 
     private fun updateAppWidget(
         context: Context,
@@ -351,6 +430,32 @@ class WorkTimeWidgetProvider : AppWidgetProvider() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
         views.setOnClickPendingIntent(R.id.widget_time_display, appPendingIntent)
+
+        // -5分ボタンのクリックイベント
+        val minus5Intent = Intent(context, WorkTimeWidgetProvider::class.java).apply {
+            action = ACTION_ADJUST_TIME_MINUS_5
+            putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
+        }
+        val minus5PendingIntent = PendingIntent.getBroadcast(
+            context,
+            appWidgetId + 1000, // ユニークなrequest code
+            minus5Intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        views.setOnClickPendingIntent(R.id.widget_minus_5_button, minus5PendingIntent)
+
+        // +5分ボタンのクリックイベント
+        val plus5Intent = Intent(context, WorkTimeWidgetProvider::class.java).apply {
+            action = ACTION_ADJUST_TIME_PLUS_5
+            putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
+        }
+        val plus5PendingIntent = PendingIntent.getBroadcast(
+            context,
+            appWidgetId + 2000, // ユニークなrequest code
+            plus5Intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        views.setOnClickPendingIntent(R.id.widget_plus_5_button, plus5PendingIntent)
     }
 
     /**
