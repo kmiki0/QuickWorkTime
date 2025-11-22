@@ -7,8 +7,9 @@ import kotlinx.coroutines.withContext
 import org.json.JSONObject
 
 /**
- * Manages cached widget states for error recovery
- * Stores the last known good state to display during errors
+ * ウィジェットの表示状態をキャッシュするクラス
+ *  キャッシュはSharedPreferencesに保存され、一定時間内であれば再利用される
+ *  キャッシュの有効期限は 5分
  */
 class WidgetStateCache(private val context: Context) {
     
@@ -16,15 +17,15 @@ class WidgetStateCache(private val context: Context) {
         private const val PREFS_NAME = "widget_state_cache"
         private const val KEY_LAST_GOOD_STATE = "last_good_state"
         private const val KEY_LAST_UPDATE_TIME = "last_update_time"
-        private const val CACHE_VALIDITY_MS = 5 * 60 * 1000L // 5 minutes
+        private const val CACHE_VALIDITY_MS = 5 * 60 * 1000L // 5 min
     }
-    
+
     private val prefs: SharedPreferences by lazy {
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     }
     
     /**
-     * Saves the current widget state as the last known good state
+     * キャッシュにウィジェットの状態を保存
      */
     suspend fun saveLastGoodState(state: WidgetDisplayState) = withContext(Dispatchers.IO) {
         try {
@@ -45,9 +46,9 @@ class WidgetStateCache(private val context: Context) {
     }
     
     /**
-     * Retrieves the last known good state if it's still valid
+     * キャッシュからウィジェットの状態を取得
      * 
-     * @return Cached widget state if valid, null otherwise
+     * @return 有効なキャッシュが存在する場合はWidgetDisplayState、存在しないか無効な場合はnull
      */
     suspend fun getLastGoodState(): WidgetDisplayState? = withContext(Dispatchers.IO) {
         try {
@@ -73,7 +74,7 @@ class WidgetStateCache(private val context: Context) {
     }
     
     /**
-     * Clears the cached state
+     * キャッシュをクリア
      */
     suspend fun clearCache() = withContext(Dispatchers.IO) {
         try {
@@ -87,14 +88,14 @@ class WidgetStateCache(private val context: Context) {
     }
     
     /**
-     * Checks if cached state is available and valid
+     * キャッシュが存在するかどうか
      */
     suspend fun hasCachedState(): Boolean = withContext(Dispatchers.IO) {
         getLastGoodState() != null
     }
     
     /**
-     * Gets the age of the cached state in milliseconds
+     * キャッシュの経過時間を取得（ミリ秒）
      */
     suspend fun getCacheAge(): Long = withContext(Dispatchers.IO) {
         val lastUpdateTime = prefs.getLong(KEY_LAST_UPDATE_TIME, 0)

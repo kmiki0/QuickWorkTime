@@ -11,8 +11,8 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
 /**
- * Service for handling widget update operations in the background
- * This service handles clock-out recording and widget refresh operations
+ * ウィジェットの更新操作をバックグラウンドで処理するサービス
+ * このサービスは退勤記録とウィジェットの更新操作を処理します
  */
 class WidgetUpdateService : Service() {
     
@@ -30,7 +30,7 @@ class WidgetUpdateService : Service() {
         private var isRecordingClockOut = false
 
         /**
-         * Helper method to start clock-out recording (重複実行防止付き)
+         * 退勤記録を開始するヘルパーメソッド（重複実行防止付き）
          */
         fun startClockOutRecording(context: Context, clockOutTime: String? = null) {
             if (isRecordingClockOut) {
@@ -41,13 +41,14 @@ class WidgetUpdateService : Service() {
             Log.i("WidgetUpdateService", "退勤記録サービス開始")
             val intent = Intent(context, WidgetUpdateService::class.java).apply {
                 action = ACTION_RECORD_CLOCK_OUT
+                // nullでない場合、clockOutTime 追加
                 clockOutTime?.let { putExtra(EXTRA_CLOCK_OUT_TIME, it) }
             }
             context.startService(intent)
         }
 
         /**
-         * Helper method to trigger widget update
+         * ウィジェット更新をトリガーするヘルパーメソッド
          */
         fun startWidgetUpdate(context: Context) {
             val intent = Intent(context, WidgetUpdateService::class.java).apply {
@@ -112,7 +113,7 @@ class WidgetUpdateService : Service() {
                 Log.i("WidgetUpdateService", "退勤記録処理開始 - 時間: $clockOutTime")
 
                 // 退勤時間を記録
-                when (val recordResult = repository.recordClockOut(clockOutTime.toString())) {
+                when (val recordResult = repository.recordClockOut(clockOutTime)) {
                     is WidgetErrorHandler.WidgetResult.Success -> {
                         Log.i("WidgetUpdateService", "退勤記録成功")
                         repository.notifyDataUpdated(this@WidgetUpdateService)
@@ -152,7 +153,7 @@ class WidgetUpdateService : Service() {
     }
 
     /**
-     * Handles widget update in background thread with error handling
+     * バックグラウンドスレッドでウィジェットを更新し、エラー処理を行います
      */
     private fun handleWidgetUpdate(startId: Int) {
         serviceScope.launch {

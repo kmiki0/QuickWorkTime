@@ -219,8 +219,10 @@ class WidgetRepository(
         errorHandler.executeWithRetry(
             operation = {
                 val today = LocalDate.now().format(dateFormatter)
+                // 今日の勤務情報を取得
                 val workInfo = workInfoRepository.getWorkInfoByDate(today)
 
+                // 勤務情報の有無によって分岐
                 val displayState = if (workInfo?.endTime != null) {
                     // 既存の記録がある場合
                     WidgetDisplayState(
