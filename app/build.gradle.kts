@@ -46,6 +46,20 @@ android {
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.3"
     }
+
+    sourceSets {
+        getByName("main") {
+            res.srcDirs(
+                "src/main/res",
+                "src/main/res/layouts/activity",
+                "src/main/res/layouts/fragment",
+                "src/main/res/layouts/item",
+                "src/main/res/layouts/dialog",
+                "src/main/res/layouts/widget",
+                "src/main/res/layouts/setting"
+            )
+        }
+    }
 }
 
 dependencies {
